@@ -20,6 +20,8 @@ export type Database = {
           created_at: string
           details: Json | null
           id: string
+          target_id: string | null
+          target_type: string | null
           user_id: string | null
         }
         Insert: {
@@ -27,6 +29,8 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: string
+          target_id?: string | null
+          target_type?: string | null
           user_id?: string | null
         }
         Update: {
@@ -34,38 +38,67 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: string
+          target_id?: string | null
+          target_type?: string | null
           user_id?: string | null
         }
         Relationships: []
       }
       ads: {
         Row: {
+          ad_type: string | null
+          clicks: number | null
+          content: string | null
           created_at: string
+          device_target: string | null
+          ends_at: string | null
           id: string
           image_url: string | null
+          impressions: number | null
           is_active: boolean
           link_url: string | null
+          placement: string | null
           position: string
+          priority: number | null
+          starts_at: string | null
           title: string
           updated_at: string
         }
         Insert: {
+          ad_type?: string | null
+          clicks?: number | null
+          content?: string | null
           created_at?: string
+          device_target?: string | null
+          ends_at?: string | null
           id?: string
           image_url?: string | null
+          impressions?: number | null
           is_active?: boolean
           link_url?: string | null
+          placement?: string | null
           position?: string
+          priority?: number | null
+          starts_at?: string | null
           title: string
           updated_at?: string
         }
         Update: {
+          ad_type?: string | null
+          clicks?: number | null
+          content?: string | null
           created_at?: string
+          device_target?: string | null
+          ends_at?: string | null
           id?: string
           image_url?: string | null
+          impressions?: number | null
           is_active?: boolean
           link_url?: string | null
+          placement?: string | null
           position?: string
+          priority?: number | null
+          starts_at?: string | null
           title?: string
           updated_at?: string
         }
@@ -286,6 +319,8 @@ export type Database = {
           code: string
           created_at: string
           discount_percent: number
+          discount_type: string | null
+          discount_value: number | null
           expires_at: string | null
           id: string
           is_active: boolean
@@ -296,6 +331,8 @@ export type Database = {
           code: string
           created_at?: string
           discount_percent?: number
+          discount_type?: string | null
+          discount_value?: number | null
           expires_at?: string | null
           id?: string
           is_active?: boolean
@@ -306,6 +343,8 @@ export type Database = {
           code?: string
           created_at?: string
           discount_percent?: number
+          discount_type?: string | null
+          discount_value?: number | null
           expires_at?: string | null
           id?: string
           is_active?: boolean
@@ -362,6 +401,7 @@ export type Database = {
           label: string | null
           name: string
           priority: number
+          server_type: string | null
         }
         Insert: {
           base_url: string
@@ -371,6 +411,7 @@ export type Database = {
           label?: string | null
           name: string
           priority?: number
+          server_type?: string | null
         }
         Update: {
           base_url?: string
@@ -380,6 +421,7 @@ export type Database = {
           label?: string | null
           name?: string
           priority?: number
+          server_type?: string | null
         }
         Relationships: []
       }
@@ -519,6 +561,60 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_methods: {
+        Row: {
+          account_number: string | null
+          account_type: string | null
+          bank_name: string | null
+          branch_name: string | null
+          color: string | null
+          created_at: string | null
+          id: string
+          instructions: string | null
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          routing_number: string | null
+          slug: string
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          account_type?: string | null
+          bank_name?: string | null
+          branch_name?: string | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          instructions?: string | null
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          routing_number?: string | null
+          slug: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          account_type?: string | null
+          bank_name?: string | null
+          branch_name?: string | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          instructions?: string | null
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          routing_number?: string | null
+          slug?: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -620,69 +716,120 @@ export type Database = {
       }
       products: {
         Row: {
+          affiliate_link: string | null
           category_id: string | null
           content_type: Database["public"]["Enums"]["content_type"]
           created_at: string
           created_by: string | null
           description: string | null
+          developer: string | null
+          discount_price: number | null
           download_count: number
           file_size: string | null
+          file_type: string | null
+          git_url: string | null
           id: string
+          image_url: string | null
+          is_active: boolean | null
           is_featured: boolean
           is_paid: boolean
+          is_trending: boolean | null
+          is_verified: boolean | null
+          license_type: string | null
           os_type: Database["public"]["Enums"]["os_type"] | null
           price: number
+          programming_language: string | null
+          release_date: string | null
           screenshots: string[] | null
           slug: string
+          source_url: string | null
           status: Database["public"]["Enums"]["product_status"]
+          tags: string[] | null
+          thumbnail_icon: string | null
           thumbnail_url: string | null
           title: string
           updated_at: string
           version: string | null
+          video_duration: string | null
+          video_url: string | null
           view_count: number
         }
         Insert: {
+          affiliate_link?: string | null
           category_id?: string | null
           content_type?: Database["public"]["Enums"]["content_type"]
           created_at?: string
           created_by?: string | null
           description?: string | null
+          developer?: string | null
+          discount_price?: number | null
           download_count?: number
           file_size?: string | null
+          file_type?: string | null
+          git_url?: string | null
           id?: string
+          image_url?: string | null
+          is_active?: boolean | null
           is_featured?: boolean
           is_paid?: boolean
+          is_trending?: boolean | null
+          is_verified?: boolean | null
+          license_type?: string | null
           os_type?: Database["public"]["Enums"]["os_type"] | null
           price?: number
+          programming_language?: string | null
+          release_date?: string | null
           screenshots?: string[] | null
           slug: string
+          source_url?: string | null
           status?: Database["public"]["Enums"]["product_status"]
+          tags?: string[] | null
+          thumbnail_icon?: string | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string
           version?: string | null
+          video_duration?: string | null
+          video_url?: string | null
           view_count?: number
         }
         Update: {
+          affiliate_link?: string | null
           category_id?: string | null
           content_type?: Database["public"]["Enums"]["content_type"]
           created_at?: string
           created_by?: string | null
           description?: string | null
+          developer?: string | null
+          discount_price?: number | null
           download_count?: number
           file_size?: string | null
+          file_type?: string | null
+          git_url?: string | null
           id?: string
+          image_url?: string | null
+          is_active?: boolean | null
           is_featured?: boolean
           is_paid?: boolean
+          is_trending?: boolean | null
+          is_verified?: boolean | null
+          license_type?: string | null
           os_type?: Database["public"]["Enums"]["os_type"] | null
           price?: number
+          programming_language?: string | null
+          release_date?: string | null
           screenshots?: string[] | null
           slug?: string
+          source_url?: string | null
           status?: Database["public"]["Enums"]["product_status"]
+          tags?: string[] | null
+          thumbnail_icon?: string | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
           version?: string | null
+          video_duration?: string | null
+          video_url?: string | null
           view_count?: number
         }
         Relationships: [
@@ -766,6 +913,36 @@ export type Database = {
           },
         ]
       }
+      scrape_queue: {
+        Row: {
+          content_type: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          source_site: string | null
+          status: string | null
+          url: string
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          source_site?: string | null
+          status?: string | null
+          url: string
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          source_site?: string | null
+          status?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           created_at: string
@@ -826,6 +1003,7 @@ export type Database = {
       subscription_plans: {
         Row: {
           created_at: string
+          daily_download_limit: number | null
           description: string | null
           duration_days: number
           features: string[] | null
@@ -833,9 +1011,11 @@ export type Database = {
           is_active: boolean
           name: string
           price: number
+          total_download_limit: number | null
         }
         Insert: {
           created_at?: string
+          daily_download_limit?: number | null
           description?: string | null
           duration_days?: number
           features?: string[] | null
@@ -843,9 +1023,11 @@ export type Database = {
           is_active?: boolean
           name: string
           price: number
+          total_download_limit?: number | null
         }
         Update: {
           created_at?: string
+          daily_download_limit?: number | null
           description?: string | null
           duration_days?: number
           features?: string[] | null
@@ -853,6 +1035,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           price?: number
+          total_download_limit?: number | null
         }
         Relationships: []
       }

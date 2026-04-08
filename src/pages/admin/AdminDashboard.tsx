@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Package, Users, Download, CreditCard, Star, Eye, MessageSquare } from "lucide-react";
+import { Package, Users, Download, CreditCard, Star, MessageSquare, Tag } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
@@ -9,13 +9,16 @@ export default function AdminDashboard() {
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [products, profiles, payments, reviews, downloads, requests] = await Promise.all([
+      const [products, profiles, payments, reviews, downloads, requests, pendingReviews, activeSubs, pendingOrders] = await Promise.all([
         supabase.from("products").select("id", { count: "exact", head: true }),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("payments").select("amount"),
         supabase.from("reviews").select("id", { count: "exact", head: true }),
         supabase.from("download_history").select("id", { count: "exact", head: true }),
         supabase.from("software_requests").select("id", { count: "exact", head: true }),
+        supabase.from("reviews").select("id", { count: "exact", head: true }).eq("is_approved", false),
+        supabase.from("subscriptions").select("id", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("payments").select("id", { count: "exact", head: true }).eq("status", "pending"),
       ]);
       const totalRevenue = payments.data?.reduce((s: number, p: any) => s + Number(p.amount), 0) || 0;
       return {
@@ -25,6 +28,9 @@ export default function AdminDashboard() {
         reviews: reviews.count || 0,
         downloads: downloads.count || 0,
         requests: requests.count || 0,
+        pendingReviews: pendingReviews.count || 0,
+        activeSubs: activeSubs.count || 0,
+        pendingOrders: pendingOrders.count || 0,
       };
     },
   });
@@ -65,20 +71,39 @@ export default function AdminDashboard() {
     },
   });
 
-  const cards = [
+  const mainCards = [
     { title: "Total Products", value: stats?.products || 0, icon: Package, color: "text-blue-500" },
     { title: "Total Users", value: stats?.users || 0, icon: Users, color: "text-green-500" },
     { title: "Total Revenue", value: `৳${stats?.revenue || 0}`, icon: CreditCard, color: "text-yellow-500" },
     { title: "Total Downloads", value: stats?.downloads || 0, icon: Download, color: "text-purple-500" },
-    { title: "Total Reviews", value: stats?.reviews || 0, icon: Star, color: "text-orange-500" },
-    { title: "Requests", value: stats?.requests || 0, icon: MessageSquare, color: "text-pink-500" },
+  ];
+
+  const secondaryCards = [
+    { title: "Pending Reviews", value: stats?.pendingReviews || 0, icon: Star, color: "text-orange-500" },
+    { title: "Active Subs", value: stats?.activeSubs || 0, icon: Tag, color: "text-cyan-500" },
+    { title: "Pending Orders", value: stats?.pendingOrders || 0, icon: MessageSquare, color: "text-pink-500" },
   ];
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-        {cards.map((c) => (
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        {mainCards.map((c) => (
+          <Card key={c.title}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{c.title}</CardTitle>
+              <c.icon className={`h-5 w-5 ${c.color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{c.value}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {secondaryCards.map((c) => (
           <Card key={c.title}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{c.title}</CardTitle>

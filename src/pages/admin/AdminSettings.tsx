@@ -1,76 +1,54 @@
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Save } from "lucide-react";
+
+const settingFields = [
+  { key: "site_name", label: "Site Name", placeholder: "File Server BD" },
+  { key: "site_description", label: "Site Description", placeholder: "Free software download platform" },
+  { key: "site_logo", label: "Logo URL", placeholder: "https://..." },
+  { key: "site_favicon", label: "Favicon URL", placeholder: "https://..." },
+  { key: "contact_email", label: "Contact Email", placeholder: "admin@example.com" },
+  { key: "footer_text", label: "Footer Text", placeholder: "© 2024 File Server BD" },
+  { key: "google_analytics", label: "Google Analytics ID", placeholder: "G-XXXXXXXXXX" },
+  { key: "adsense_client", label: "AdSense Client ID", placeholder: "ca-pub-XXXXXXXXXX" },
+  { key: "telegram_link", label: "Telegram Link", placeholder: "https://t.me/channel" },
+  { key: "facebook_link", label: "Facebook Link", placeholder: "https://facebook.com/page" },
+  { key: "youtube_link", label: "YouTube Link", placeholder: "https://youtube.com/channel" },
+];
 
 export default function AdminSettings() {
   const qc = useQueryClient();
-  const { data: settings } = useQuery({
-    queryKey: ["admin-settings"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("site_settings").select("*").order("key");
-      if (error) throw error;
-      return data;
-    },
-  });
-  const [editing, setEditing] = useState<any>(null);
-  const [open, setOpen] = useState(false);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const { data: settings } = useQuery({ queryKey: ["admin-settings"], queryFn: async () => { const { data, error } = await supabase.from("site_settings").select("*"); if (error) throw error; return data; } });
+  useEffect(() => { if (settings) { const map: Record<string, string> = {}; settings.forEach(s => { map[s.key] = s.value || ""; }); setValues(map); } }, [settings]);
 
-  const save = useMutation({
-    mutationFn: async (s: any) => {
-      if (s.id) {
-        const { error } = await supabase.from("site_settings").update({ key: s.key, value: s.value } as any).eq("id", s.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("site_settings").insert({ key: s.key, value: s.value } as any);
-        if (error) throw error;
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      for (const field of settingFields) {
+        const existing = settings?.find(s => s.key === field.key);
+        if (existing) { await supabase.from("site_settings").update({ value: values[field.key] || null }).eq("id", existing.id); }
+        else if (values[field.key]) { await supabase.from("site_settings").insert({ key: field.key, value: values[field.key] }); }
       }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-settings"] }); setOpen(false); toast.success("Saved!"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-settings"] }); toast.success("Settings saved!"); },
+    onError: (e: any) => toast.error(e.message),
   });
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Site Settings</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditing({ key: "", value: "" })}><Plus className="h-4 w-4 mr-1" /> Add Setting</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Setting</DialogTitle></DialogHeader>
-            {editing && (
-              <div className="space-y-4">
-                <div className="space-y-2"><Label>Key</Label><Input value={editing.key} onChange={(e) => setEditing({ ...editing, key: e.target.value })} /></div>
-                <div className="space-y-2"><Label>Value</Label><Input value={editing.value || ""} onChange={(e) => setEditing({ ...editing, value: e.target.value })} /></div>
-                <Button onClick={() => save.mutate(editing)} className="w-full">Save</Button>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader><TableRow><TableHead>Key</TableHead><TableHead>Value</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-          <TableBody>
-            {settings?.map((s: any) => (
-              <TableRow key={s.id}>
-                <TableCell className="font-mono text-sm">{s.key}</TableCell>
-                <TableCell className="text-sm">{s.value}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" onClick={() => { setEditing(s); setOpen(true); }}>Edit</Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold">Site Settings</h2>
+      <Card><CardHeader><CardTitle>General Settings</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {settingFields.map(field => <div key={field.key} className="space-y-2"><Label>{field.label}</Label><Input value={values[field.key] || ""} onChange={e => setValues({ ...values, [field.key]: e.target.value })} placeholder={field.placeholder} /></div>)}
+          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="w-full"><Save className="h-4 w-4 mr-2" /> Save Settings</Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

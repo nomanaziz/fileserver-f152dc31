@@ -5,71 +5,53 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { Eye, Check } from "lucide-react";
 
 export default function AdminOrders() {
   const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
+  const [viewing, setViewing] = useState<any>(null);
 
-  const { data: payments } = useQuery({
+  const { data: payments, isLoading } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
       const { data, error } = await supabase.from("payments").select("*, products(title)").order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      const userIds = [...new Set(data.map(p => p.user_id))];
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", userIds);
+      const nameMap: Record<string, string> = {}; profiles?.forEach(p => { nameMap[p.id] = p.display_name || "User"; });
+      return data.map(p => ({ ...p, user_name: nameMap[p.user_id] || "User" }));
     },
   });
-
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("payments").update({ status }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-orders"] }); toast.success("Updated!"); },
+    mutationFn: async ({ id, status }: { id: string; status: string }) => { const { error } = await supabase.from("payments").update({ status } as any).eq("id", id); if (error) throw error; },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-orders"] }); toast.success("Order updated!"); },
+    onError: (e: any) => toast.error(e.message),
   });
-
-  const filtered = payments?.filter((p) => statusFilter === "all" || p.status === statusFilter);
+  const filtered = payments?.filter(p => statusFilter === "all" || p.status === statusFilter);
+  const statusBadge = (s: string) => { const map: Record<string, "default" | "secondary" | "destructive"> = { completed: "default", pending: "secondary", failed: "destructive" }; return <Badge variant={map[s] || "secondary"} className="capitalize">{s}</Badge>; };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Orders / Payments</h1>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="failed">Failed</SelectItem>
-          </SelectContent>
-        </Select>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold">Orders ({payments?.length || 0})</h2>
+        <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem><SelectItem value="pending">Pending</SelectItem><SelectItem value="completed">Completed</SelectItem><SelectItem value="failed">Failed</SelectItem></SelectContent></Select>
       </div>
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader><TableRow><TableHead>Transaction</TableHead><TableHead>Product</TableHead><TableHead>Amount</TableHead><TableHead>Method</TableHead><TableHead>Status</TableHead><TableHead>Date</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-          <TableBody>
-            {filtered?.map((p: any) => (
-              <TableRow key={p.id}>
-                <TableCell className="font-mono text-sm">{p.transaction_id || "-"}</TableCell>
-                <TableCell>{p.products?.title || "-"}</TableCell>
-                <TableCell>৳{p.amount}</TableCell>
-                <TableCell>{p.payment_method || "-"}</TableCell>
-                <TableCell><Badge variant={p.status === "completed" ? "default" : p.status === "pending" ? "secondary" : "destructive"}>{p.status}</Badge></TableCell>
-                <TableCell className="text-sm">{new Date(p.created_at).toLocaleDateString()}</TableCell>
-                <TableCell className="text-right space-x-1">
-                  {p.status === "pending" && (
-                    <>
-                      <Button variant="ghost" size="sm" onClick={() => updateStatus.mutate({ id: p.id, status: "completed" })}>Approve</Button>
-                      <Button variant="ghost" size="sm" onClick={() => updateStatus.mutate({ id: p.id, status: "failed" })}>Reject</Button>
-                    </>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-            {filtered?.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No orders found.</TableCell></TableRow>}
-          </TableBody>
+      {isLoading ? <div className="animate-pulse h-48 bg-card rounded-xl" /> : (
+        <Table><TableHeader><TableRow><TableHead>User</TableHead><TableHead>Product</TableHead><TableHead>Amount</TableHead><TableHead>Method</TableHead><TableHead>Status</TableHead><TableHead>Date</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
+          <TableBody>{filtered?.map((p: any) => (
+            <TableRow key={p.id}>
+              <TableCell className="font-medium">{p.user_name}</TableCell><TableCell className="text-sm">{p.products?.title || "—"}</TableCell>
+              <TableCell>৳{p.amount}</TableCell><TableCell className="text-sm">{p.payment_method || "—"}</TableCell>
+              <TableCell>{statusBadge(p.status)}</TableCell><TableCell className="text-sm">{new Date(p.created_at).toLocaleDateString()}</TableCell>
+              <TableCell><div className="flex gap-1"><Button variant="ghost" size="icon" onClick={() => setViewing(p)}><Eye className="h-4 w-4" /></Button>{p.status === "pending" && <Button variant="ghost" size="icon" onClick={() => updateStatus.mutate({ id: p.id, status: "completed" })}><Check className="h-4 w-4 text-green-500" /></Button>}</div></TableCell>
+            </TableRow>
+          ))}{(!filtered || filtered.length === 0) && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No orders</TableCell></TableRow>}</TableBody>
         </Table>
-      </div>
+      )}
+      <Dialog open={!!viewing} onOpenChange={v => { if (!v) setViewing(null); }}><DialogContent><DialogHeader><DialogTitle>Order Details</DialogTitle></DialogHeader><div className="space-y-2 text-sm"><p><strong>User:</strong> {viewing?.user_name}</p><p><strong>Product:</strong> {viewing?.products?.title || "—"}</p><p><strong>Amount:</strong> ৳{viewing?.amount}</p><p><strong>Method:</strong> {viewing?.payment_method || "—"}</p><p><strong>Transaction ID:</strong> {viewing?.transaction_id || "—"}</p><p><strong>Status:</strong> {viewing?.status}</p></div></DialogContent></Dialog>
     </div>
   );
 }
