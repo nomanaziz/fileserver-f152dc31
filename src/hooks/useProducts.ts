@@ -1,35 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
-export interface Product {
-  id: string;
-  title: string;
-  slug: string;
-  description: string | null;
-  category_id: string | null;
-  content_type: string;
-  os_type: string | null;
-  version: string | null;
-  file_size: string | null;
-  price: number;
-  is_paid: boolean;
-  is_featured: boolean;
-  status: string;
-  thumbnail_url: string | null;
-  screenshots: string[];
-  download_count: number;
-  view_count: number;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-  categories?: { name: string; slug: string } | null;
-}
+export type Product = Tables<"products"> & {
+  categories: { name: string; slug: string; icon: string | null } | null;
+};
 
 export function useProducts(filters?: { category_id?: string; search?: string; featured?: boolean; limit?: number }) {
   return useQuery({
     queryKey: ["products", filters],
     queryFn: async () => {
-      let query = supabase.from("products").select("*, categories(name, slug)");
+      let query = supabase.from("products").select("*, categories(name, slug, icon)").eq("status", "published");
       if (filters?.category_id) query = query.eq("category_id", filters.category_id);
       if (filters?.search) query = query.ilike("title", `%${filters.search}%`);
       if (filters?.featured) query = query.eq("is_featured", true);
@@ -49,13 +30,45 @@ export function useProductBySlug(slug: string | undefined) {
       if (!slug) return null;
       const { data, error } = await supabase
         .from("products")
-        .select("*, categories(name, slug)")
+        .select("*, categories(name, slug, icon)")
         .eq("slug", slug)
         .single();
       if (error) throw error;
       return data as Product;
     },
     enabled: !!slug,
+  });
+}
+
+export function useFeaturedProducts() {
+  return useQuery({
+    queryKey: ["featured-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*, categories(name, slug, icon)")
+        .eq("status", "published")
+        .order("download_count", { ascending: false })
+        .limit(8);
+      if (error) throw error;
+      return data as Product[];
+    },
+  });
+}
+
+export function useLatestProducts() {
+  return useQuery({
+    queryKey: ["latest-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*, categories(name, slug, icon)")
+        .eq("status", "published")
+        .order("created_at", { ascending: false })
+        .limit(12);
+      if (error) throw error;
+      return data as Product[];
+    },
   });
 }
 

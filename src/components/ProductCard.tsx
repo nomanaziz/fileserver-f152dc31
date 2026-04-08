@@ -1,53 +1,153 @@
 import { Link } from "react-router-dom";
+import { Download, Monitor, Smartphone, Gamepad2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, Eye } from "lucide-react";
-import { Product } from "@/hooks/useProducts";
+import type { Product } from "@/hooks/useProducts";
 
-export default function ProductCard({ product }: { product: Product }) {
+const osIcons: Record<string, any> = {
+  windows: Monitor,
+  android: Smartphone,
+  mac: Monitor,
+  linux: Monitor,
+  ios: Smartphone,
+  cross_platform: Gamepad2,
+};
+
+const categoryColors: Record<string, string> = {
+  software: "217 91% 60%",
+  android: "142 71% 45%",
+  games: "271 76% 53%",
+  movies: "0 84% 60%",
+  tutorials: "45 93% 47%",
+  graphics: "330 81% 60%",
+  "source-code": "187 85% 53%",
+};
+
+function getCatColor(slug?: string | null): string {
+  return slug ? categoryColors[slug] || "262 83% 58%" : "262 83% 58%";
+}
+
+interface ProductCardProps {
+  product: Product;
+  variant?: "grid" | "list";
+}
+
+export default function ProductCard({ product, variant = "grid" }: ProductCardProps) {
+  const OsIcon = product.os_type ? osIcons[product.os_type] || Monitor : Monitor;
+  const catColor = getCatColor(product.categories?.slug);
+
+  if (variant === "list") {
+    return (
+      <Link to={`/product/${product.slug}`} className="list-row group">
+        <div className="h-14 w-20 rounded-md bg-muted overflow-hidden shrink-0">
+          {product.thumbnail_url ? (
+            <img src={product.thumbnail_url} alt={product.title} className="w-full h-full object-cover" loading="lazy" />
+          ) : product.screenshots && product.screenshots.length > 0 ? (
+            <img src={product.screenshots[0]} alt={product.title} className="w-full h-full object-cover" loading="lazy" />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <OsIcon className="h-5 w-5 text-muted-foreground/30" />
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-semibold truncate group-hover:text-primary transition-colors">
+            {product.title}
+          </h3>
+          <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
+            {product.description || "No description available"}
+          </p>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-3 shrink-0">
+          {product.categories && (
+            <Badge variant="secondary" className="text-[10px] px-2 py-0.5" style={{ backgroundColor: `hsl(${catColor} / 0.1)`, color: `hsl(${catColor})` }}>
+              {product.categories.name}
+            </Badge>
+          )}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <OsIcon className="h-3 w-3" />
+          </div>
+          {product.file_size && (
+            <span className="text-[11px] text-muted-foreground">{product.file_size}</span>
+          )}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Download className="h-3 w-3" />
+            <span>{product.download_count}</span>
+          </div>
+        </div>
+
+        <div className="shrink-0">
+          {product.is_paid ? (
+            <Badge className="bg-primary text-primary-foreground border-0 text-xs">৳{product.price}</Badge>
+          ) : (
+            <Badge variant="secondary" className="text-xs">Free</Badge>
+          )}
+        </div>
+      </Link>
+    );
+  }
+
   return (
     <Link to={`/product/${product.slug}`}>
-      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 h-full">
+      <Card className="group overflow-hidden border-border bg-card card-hover">
+        <div className="h-0.5" style={{ background: `hsl(${catColor})` }} />
+
         <div className="aspect-video bg-muted relative overflow-hidden">
           {product.thumbnail_url ? (
             <img
               src={product.thumbnail_url}
               alt={product.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              loading="lazy"
+            />
+          ) : product.screenshots && product.screenshots.length > 0 ? (
+            <img
+              src={product.screenshots[0]}
+              alt={product.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               loading="lazy"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-              <Download className="h-10 w-10" />
+            <div className="flex items-center justify-center h-full">
+              <OsIcon className="h-8 w-8 text-muted-foreground/20" />
             </div>
           )}
-          {product.is_featured && (
-            <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground">ফিচার্ড</Badge>
-          )}
-          {product.is_paid && (
-            <Badge variant="secondary" className="absolute top-2 right-2">
-              ৳{product.price}
-            </Badge>
-          )}
-        </div>
-        <CardContent className="p-4">
-          <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
-            {product.title}
-          </h3>
-          <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Download className="h-3 w-3" />
-              {product.download_count}
-            </span>
-            <span className="flex items-center gap-1">
-              <Eye className="h-3 w-3" />
-              {product.view_count}
-            </span>
-            {product.categories && (
-              <Badge variant="outline" className="text-[10px]">
-                {product.categories.name}
+
+          <div className="absolute top-2 right-2">
+            {product.is_paid ? (
+              <Badge className="bg-primary text-primary-foreground border-0 shadow-sm text-[11px]">
+                ৳{product.price}
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm border-0 text-[11px]">
+                Free
               </Badge>
             )}
+          </div>
+        </div>
+
+        <CardContent className="p-3">
+          <h3 className="font-semibold text-base line-clamp-1 group-hover:text-primary transition-colors">
+            {product.title}
+          </h3>
+          <div className="flex items-center justify-between mt-1.5">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              {product.categories && (
+                <span
+                  className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                  style={{ backgroundColor: `hsl(${catColor} / 0.1)`, color: `hsl(${catColor})` }}
+                >
+                  {product.categories.name}
+                </span>
+              )}
+              {product.version && <span className="text-[10px]">v{product.version}</span>}
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Download className="h-3 w-3" />
+              <span>{product.download_count}</span>
+            </div>
           </div>
         </CardContent>
       </Card>
