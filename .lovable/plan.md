@@ -1,122 +1,98 @@
 
 
-## File Server — Full Supabase Rebuild
+# Design Overhaul — Match Original FileServer Exactly
 
-### Phase 1: Database Setup (Supabase Migrations)
+## Problem
+The current project has a completely different design from the original [File Server](/projects/5f93cb8d-8c3f-4357-a813-d949c7533a54) project. Key differences:
 
-Create all tables in the new Supabase project, matching the old schema but cleaner:
+```text
+Original (fileserver.lovable.app)          Current Project
+─────────────────────────────────          ───────────────
+Light theme (white bg)                     Dark theme (navy bg)
+Purple primary (#7C3AED)                   Blue primary (#3B82F6)
+Navbar: logo + search + actions (row 1)    Single header with all in one row
+Category tab bar below navbar              No category bar, just 4 nav links
+Trending = horizontal list rows            Featured = card grid
+Right sidebar (Popular, Request, Links)    Left sidebar (category list only)
+Inter + JetBrains Mono fonts              No custom fonts
+Login: split layout (branding + form)      Simple centered form
+Footer: 5-column with newsletter           3-column simple footer
+Logo image (fileserver-white-logo.png)     Shield icon text logo
+```
 
-**Core Tables:**
-- `profiles` — user profiles (id refs auth.users, display_name, avatar_url, phone, is_active)
-- `user_roles` — role-based access (user_id, role enum: admin/moderator/user)
-- `categories` — fully dynamic (name, slug, description, icon, parent_id for nesting, sort_order)
-- `products` — main content (title, slug, description, category_id FK, content_type, os_type, version, file_size, price, screenshots[], is_featured, is_paid, status, download_count, etc.)
-- `download_servers` — server list (name, label, base_url, is_active, priority)
-- `product_downloads` — download links per product per server
+## Plan
 
-**User-facing Tables:**
-- `cart_items`, `favorites`, `reviews`, `payments`, `download_history`
-- `software_requests` — user software request form
-- `subscriptions` / `subscription_plans` — pricing tiers
+### 1. Copy assets from original project
+- Copy `fileserver-white-logo.png` logo
+- Copy `favicon.ico`
 
-**Content Tables:**
-- `blog_posts` — blog system
-- `pages` — static CMS pages
-- `menu_items` — dynamic navigation
-- `contact_messages` — contact form submissions
+### 2. Replace CSS theme (`src/index.css`)
+- Switch to original's light-mode-only color scheme: purple primary (`262 83% 58%`), white background, purple accent
+- Add Inter + JetBrains Mono font imports
+- Add utility classes: `.text-gradient`, `.card-hover`, `.list-row`, `.shimmer`
+- Add category accent color CSS variables
 
-**Admin Tables:**
-- `ads` — ad management
-- `coupons` — discount codes
-- `live_channels` — live TV streams
-- `site_settings` — key/value site config
-- `activity_logs` — admin action tracking
-- `chat_conversations` / `chat_messages` — live chat
+### 3. Update Tailwind config (`tailwind.config.ts`)
+- Add `fontFamily` (Inter, JetBrains Mono)
+- Add animations: `fade-in`, `scale-in`, `slide-up`, `slide-in-right`
+- Keep existing color structure (already uses CSS variables)
 
-**RLS Policies:** Public read for products/categories/blog/pages. Authenticated write for user-specific data. Admin-only for management tables using `has_role()` security definer function.
+### 4. Rebuild Header → Navbar (`src/components/layout/Navbar.tsx`)
+Replace the current Header with the original's two-row navbar:
+- **Row 1**: Logo image | Search bar (with ⌘K badge) | Heart, Cart, User dropdown | Sign In/Sign Up
+- **Row 2**: Category tab bar — Home + DB categories (with subcategory popovers) + Pricing + Live TV + custom menu_items
+- **Mobile**: Sheet drawer with search, expandable categories, auth links
 
-**Triggers:** Auto-create profile on signup. Auto-update `updated_at` timestamps.
+### 5. Rebuild Homepage (`src/pages/Index.tsx`)
+Match original layout exactly:
+- Compact hero with "Fast & Free Downloads" badge, "Download Everything You Need" heading, search bar with Search button
+- **Main content (left)**: "Trending Downloads" in list-row format (not cards), "Latest Uploads" in 4-column grid
+- **Right sidebar**: "Most Popular" numbered list, Software Request Form widget, "Quick Links" category list
 
----
+### 6. Rebuild ProductCard (`src/components/ProductCard.tsx`)
+Add dual variant support matching original:
+- **`list` variant**: Horizontal row with thumbnail, title, description, category badge (colored), OS icon, file size, download count, price badge
+- **`grid` variant**: Card with color accent bar, thumbnail, price badge overlay, title, category + version, download count
 
-### Phase 2: Auth System
-- Supabase Auth with email/password signup & login
-- `AuthContext` provider wrapping the app
-- Login, Register, Forgot Password, Reset Password pages
-- Protected routes for dashboard & admin
-- Admin guard using `user_roles` table
+### 7. Add SoftwareRequestForm component
+Port from original — form with software name + description + submit, plus recent requests list
 
----
+### 8. Rebuild Footer (`src/components/layout/Footer.tsx`)
+Match original's 5-column layout:
+- Col 1-2: Logo + description + email newsletter
+- Col 3: Categories links
+- Col 4: More (Blog, About, Contact, Pricing)
+- Col 5: Legal (Privacy, Terms, Refund + dynamic menu_items)
+- Bottom bar: Copyright + social icons
 
-### Phase 3: Core UI — Layout & Navigation
-- **Layout component** with dynamic header (menu_items from DB), footer
-- **Responsive sidebar** on category pages with DB-driven category list
-- **Search bar** in header — searches products by title/description
-- Remove all hardcoded category arrays — everything from Supabase
+### 9. Rebuild Login page (`src/pages/Login.tsx`)
+Match original split layout:
+- Left: gradient background + Download icon + "Welcome to FileServer" branding
+- Right: Card with Sign In form
 
----
+### 10. Update Layout (`src/components/layout/Layout.tsx`)
+- Use Navbar instead of Header
+- Add AdBanner placements (header/footer)
+- Add LiveChat component
 
-### Phase 4: Public Pages
-- **Homepage** — hero/search, trending products, latest uploads, popular sidebar (all from DB)
-- **Category page** — products filtered by category_id, with sidebar category list
-- **Product detail** — full info, screenshots gallery, download links (from product_downloads + servers), reviews
-- **Search page** — query products with category filter dropdown
-- **Blog list & post** — from blog_posts table
-- **Static pages** — rendered from pages table by slug
-- **About, Contact, Pricing** pages
-- **Live TV** — stream channels from live_channels table
-- **Cart, Checkout, Payment status** pages
+### 11. Remove `index.html` dark class
+Remove `class="dark"` from `<html>` tag — original is light theme only
 
----
+### 12. Update project memory
+Update design tokens memory to reflect the original purple-primary light theme
 
-### Phase 5: User Dashboard
-- Profile tab (edit display_name, avatar, phone)
-- Favorites tab
-- Downloads history tab
-- Purchases tab
-- Subscription tab
-- Software requests tab
-
----
-
-### Phase 6: Full Admin Panel
-- **Admin layout** with sidebar navigation
-- **Dashboard** — stats (total products, users, downloads, revenue)
-- **Products CRUD** — create/edit/delete with category dropdown, file details, screenshots
-- **Categories CRUD** — add/edit/delete, nested parent support
-- **Users management** — view profiles, toggle active, assign roles
-- **Orders/Payments** — view payment records
-- **Download Servers** — manage servers
-- **Reviews moderation** — approve/reject
-- **Blog CRUD** — create/edit/publish posts
-- **Pages CMS** — manage static pages
-- **Menu Items** — manage navigation links
-- **Ads management** — create/toggle ads
-- **Coupons** — manage discount codes
-- **Subscriptions** — manage plans
-- **Software Requests** — view user requests
-- **Live TV** — manage channels
-- **Contact Messages** — view inbox
-- **Chat** — admin chat interface
-- **Activity Log** — view admin actions
-- **Site Settings** — key/value configuration
-- **Analytics** — basic stats page
-
----
-
-### Phase 7: Hooks & Services
-- Reusable hooks: `useProducts`, `useCategories`, `useCart`, `useFavorites`, `useReviews`, `useSubscription`, `usePurchases`
-- All use `@tanstack/react-query` for caching and optimistic updates
-- Supabase client from `@/integrations/supabase/client`
-
----
-
-### Design Approach
-- Keep the existing dark-capable design system from the old project
-- Clean, modern UI with the card-based product layout
-- Responsive — mobile-friendly with collapsible sidebar
-- Category filtering via sidebar list + dropdown on mobile
-- No tag clouds or label clouds anywhere
-
-This is a large rebuild that will be done incrementally, starting with database → auth → core pages → admin panel.
+## Files Modified
+- `src/index.css` — full rewrite
+- `tailwind.config.ts` — fonts + animations
+- `index.html` — remove dark class
+- `src/components/layout/Navbar.tsx` — new (replaces Header.tsx)
+- `src/components/layout/Header.tsx` — delete or keep as redirect
+- `src/components/layout/Footer.tsx` — full rewrite
+- `src/components/layout/Layout.tsx` — update imports
+- `src/components/ProductCard.tsx` — full rewrite with list/grid variants
+- `src/components/SoftwareRequestForm.tsx` — new component
+- `src/pages/Index.tsx` — full rewrite
+- `src/pages/Login.tsx` — full rewrite
+- `src/assets/fileserver-white-logo.png` — copied from original
+- `mem://design/tokens` — updated
 
