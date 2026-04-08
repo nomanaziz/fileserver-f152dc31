@@ -1,80 +1,36 @@
 
 
-# Admin Panel Overhaul — Match Original FileServer Exactly
+# Fix Missing Pages and Auth Redirects
 
-## Summary
-The current admin panel has 7 pages with Bangla labels and a wrapper-based layout. The original has 23 pages with English labels, Outlet-based routing, a richer dashboard, and many more features. This plan brings them into full parity.
+## Problems
+1. `/pricing` and `/live-tv` routes don't exist — they 404
+2. Logged-in users can still access `/login` and `/register` instead of being redirected to `/dashboard`
 
-## Key Differences
+## Plan
 
-```text
-Original (fileserver.lovable.app)              Current Project
-──────────────────────────                     ──────────────
-Outlet-based routing (AdminLayout + <Outlet>)  Wrapper pattern (<AdminLayout>{children}</AdminLayout>)
-23 admin pages                                 7 admin pages
-English labels in sidebar                      Bangla labels
-Two sidebar groups: "Admin Panel" + "CMS"      Single group "অ্যাডমিন"
-Header: "Admin Panel" title, email, View Site, Sign Out buttons
-Rich dashboard: 7 stat cards, recent uploads table, top downloaded, activity log
-Full-featured product form (screenshots, download links, tags, bulk actions)
-```
+### 1. Create `src/pages/Pricing.tsx`
+- Subscription plans page that fetches from `subscription_plans` table
+- Shows plan cards with features, price, duration
+- Wrapped in `<Layout>`
 
-## Architecture Change
+### 2. Create `src/pages/LiveTV.tsx`
+- Public page that fetches active channels from `live_channels` table
+- Displays channel grid with embedded player or thumbnails
+- Wrapped in `<Layout>`
 
-**1. Convert AdminLayout to Outlet pattern**
-- Move `AdminLayout` from `src/components/admin/AdminLayout.tsx` to `src/pages/admin/AdminLayout.tsx`
-- Replace `children` prop with `<Outlet />` from react-router-dom
-- Update sidebar links to match original exactly (English labels, two groups)
-- Header: show user email, "View Site" button, "Sign Out" button
+### 3. Add routes in `App.tsx`
+- Add `<Route path="/pricing" element={<Pricing />} />`
+- Add `<Route path="/live-tv" element={<LiveTV />} />`
 
-**2. Update App.tsx routing**
-- Replace individual admin routes with nested route structure:
-```
-<Route path="/admin" element={<AdminLayout />}>
-  <Route index element={<AdminDashboard />} />
-  <Route path="products" element={<AdminProducts />} />
-  ...21 more child routes
-</Route>
-```
+### 4. Add auth redirect to `Login.tsx` and `Register.tsx`
+- Import `useAuth` and check if `user` exists
+- If logged in, `<Navigate to="/dashboard" />` immediately
+- Prevents authenticated users from seeing login/register forms
 
-## Pages to Create/Rewrite (16 new + 7 rewritten)
-
-**Rewrite existing 7 pages** (remove `<AdminLayout>` wrapper, copy logic from original):
-- `AdminDashboard.tsx` — 7 stat cards, recent uploads table, top downloaded, quick actions, activity log
-- `AdminProducts.tsx` — Full product form with screenshots, download links, bulk actions, filters, sorting
-- `AdminCategories.tsx` — Keep current logic, remove `<AdminLayout>` wrapper
-- `AdminUsers.tsx` — Remove wrapper
-- `AdminServers.tsx` — Remove wrapper
-- `AdminMessages.tsx` — Rename to `AdminContacts.tsx`, copy original contact messages UI
-- `AdminSettings.tsx` — Replace with original key-value settings form
-
-**Create 16 new pages** (copy from original project):
-- `AdminOrders.tsx` — payments CRUD with status filter, approve, view details
-- `AdminPaymentMethods.tsx` — payment methods CRUD (bKash, bank, etc.)
-- `AdminRequests.tsx` — software requests with convert-to-product flow
-- `AdminReviews.tsx` — review moderation with approve/reject tabs
-- `AdminSubscriptions.tsx` — subscription plan CRUD
-- `AdminCoupons.tsx` — coupon CRUD with discount type/expiry
-- `AdminScraping.tsx` — scraping tool (single URL + bulk import + queue)
-- `AdminAds.tsx` — ad management with placements, types, scheduling
-- `AdminAnalytics.tsx` — charts (recharts) for daily downloads, top products/categories
-- `AdminActivityLog.tsx` — activity log table
-- `AdminPages.tsx` — CMS pages CRUD
-- `AdminMenuItems.tsx` — menu items CRUD
-- `AdminBlog.tsx` — blog post CRUD
-- `AdminChat.tsx` — live chat with realtime
-- `AdminLiveTV.tsx` — live TV channel CRUD
-- (AdminContacts already counted above)
-
-## Database Considerations
-- Some original pages reference tables that may not exist in current schema (e.g., `scrape_queue`, `payment_methods`, `user_subscriptions`). The pages will be created as-is; queries will gracefully return empty until those tables are added.
-- `AdminAnalytics` uses `recharts` — need to install the package.
-
-## File Changes Summary
-- Delete: `src/components/admin/AdminLayout.tsx`
-- Create: `src/pages/admin/AdminLayout.tsx` (new Outlet-based layout)
-- Rewrite: 7 existing admin pages (remove wrapper, update to match original)
-- Create: 15 new admin page files
-- Update: `src/App.tsx` (nested routing)
-- Install: `recharts` package (for analytics charts)
+### Files Changed
+- `src/pages/Pricing.tsx` — new
+- `src/pages/LiveTV.tsx` — new
+- `src/pages/Login.tsx` — add auth redirect
+- `src/pages/Register.tsx` — add auth redirect
+- `src/App.tsx` — add 2 routes
 
