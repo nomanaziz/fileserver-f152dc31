@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Search, TrendingUp, Clock, Sparkles, ArrowRight, Download, Flame } from "lucide-react";
+import { Search, TrendingUp, Clock, Sparkles, ArrowRight, Download, Flame, Monitor, Smartphone, Laptop } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import Layout from "@/components/layout/Layout";
 import ProductCard from "@/components/ProductCard";
 import { useFeaturedProducts, useLatestProducts } from "@/hooks/useProducts";
+import { useDevicePlatform, getPlatformLabel, matchesPlatform } from "@/hooks/useDevicePlatform";
+import { useRecommendedProducts } from "@/hooks/useRecommendedProducts";
 import SoftwareRequestForm from "@/components/SoftwareRequestForm";
 
 export default function Index() {
@@ -13,6 +16,22 @@ export default function Index() {
   const navigate = useNavigate();
   const { data: featured, isLoading: loadingFeatured } = useFeaturedProducts();
   const { data: latest, isLoading: loadingLatest } = useLatestProducts();
+  const platform = useDevicePlatform();
+  const { data: recommended, isLoading: loadingRecommended } = useRecommendedProducts(platform);
+
+  const platformLabel = getPlatformLabel(platform);
+  const PlatformIcon = platform === "android" || platform === "ios" ? Smartphone : platform === "mac" ? Laptop : Monitor;
+
+  // Sort trending/latest to boost platform-matching products
+  const sortByRelevance = (products: typeof featured) => {
+    if (!products || platform === "unknown") return products;
+    const matched = products.filter((p) => matchesPlatform(p.categories?.slug, platform));
+    const rest = products.filter((p) => !matchesPlatform(p.categories?.slug, platform));
+    return [...matched, ...rest];
+  };
+
+  const sortedFeatured = sortByRelevance(featured);
+  const sortedLatest = sortByRelevance(latest);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +79,38 @@ export default function Index() {
         <div className="flex gap-8">
           {/* Main content */}
           <div className="flex-1 min-w-0">
+            {/* Recommended for Your Device */}
+            {platform !== "unknown" && (
+              <section className="mb-10">
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-md bg-accent/20 flex items-center justify-center">
+                      <PlatformIcon className="h-3.5 w-3.5 text-accent-foreground" />
+                    </div>
+                    <h2 className="text-xl font-bold">Recommended for You</h2>
+                    <Badge variant="secondary" className="text-[10px] px-2 py-0.5">{platformLabel}</Badge>
+                  </div>
+                </div>
+                {loadingRecommended ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="aspect-video rounded-lg shimmer" />
+                    ))}
+                  </div>
+                ) : recommended && recommended.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {recommended.slice(0, 6).map((p) => (
+                      <ProductCard key={p.id} product={p} variant="grid" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 rounded-xl border border-dashed border-border">
+                    <p className="text-muted-foreground text-sm">No {platformLabel} content available yet.</p>
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* Trending — List view */}
             <section className="mb-10">
               <div className="flex items-center justify-between mb-5">
@@ -76,9 +127,9 @@ export default function Index() {
                     <div key={i} className="h-16 rounded-lg shimmer" />
                   ))}
                 </div>
-              ) : featured && featured.length > 0 ? (
+              ) : sortedFeatured && sortedFeatured.length > 0 ? (
                 <div className="space-y-1">
-                  {featured.slice(0, 6).map((p) => (
+                  {sortedFeatured.slice(0, 6).map((p) => (
                     <ProductCard key={p.id} product={p} variant="list" />
                   ))}
                 </div>
@@ -105,9 +156,9 @@ export default function Index() {
                     <div key={i} className="aspect-video rounded-lg shimmer" />
                   ))}
                 </div>
-              ) : latest && latest.length > 0 ? (
+              ) : sortedLatest && sortedLatest.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {latest.map((p) => (
+                  {sortedLatest.map((p) => (
                     <ProductCard key={p.id} product={p} variant="grid" />
                   ))}
                 </div>
