@@ -16,6 +16,22 @@ export default function Index() {
   const navigate = useNavigate();
   const { data: featured, isLoading: loadingFeatured } = useFeaturedProducts();
   const { data: latest, isLoading: loadingLatest } = useLatestProducts();
+  const platform = useDevicePlatform();
+  const { data: recommended, isLoading: loadingRecommended } = useRecommendedProducts(platform);
+
+  const platformLabel = getPlatformLabel(platform);
+  const PlatformIcon = platform === "android" || platform === "ios" ? Smartphone : platform === "mac" ? Laptop : Monitor;
+
+  // Sort trending/latest to boost platform-matching products
+  const sortByRelevance = (products: typeof featured) => {
+    if (!products || platform === "unknown") return products;
+    const matched = products.filter((p) => matchesPlatform(p.categories?.slug, platform));
+    const rest = products.filter((p) => !matchesPlatform(p.categories?.slug, platform));
+    return [...matched, ...rest];
+  };
+
+  const sortedFeatured = sortByRelevance(featured);
+  const sortedLatest = sortByRelevance(latest);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
