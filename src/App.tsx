@@ -93,8 +93,8 @@ const App = () => (
               <Route path="settings" element={<AdminSettings />} />
               <Route path="blog" element={<AdminBlog />} />
               <Route path="pages" element={<AdminPages />} />
-              <Route path="menu" element={<AdminMenuItems />} />
-              <Route path="messages" element={<AdminMessages />} />
+              <Route path="menu-items" element={<AdminMenuItems />} />
+              <Route path="contacts" element={<AdminContacts />} />
               <Route path="chat" element={<AdminChat />} />
               <Route path="live-tv" element={<AdminLiveTV />} />
             </Route>
