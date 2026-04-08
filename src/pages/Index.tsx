@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Search, TrendingUp, Clock, Sparkles, ArrowRight, Download, Flame } from "lucide-react";
+import { Search, TrendingUp, Clock, Sparkles, ArrowRight, Download, Flame, Monitor, Smartphone, Laptop } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import Layout from "@/components/layout/Layout";
 import ProductCard from "@/components/ProductCard";
 import { useFeaturedProducts, useLatestProducts } from "@/hooks/useProducts";
+import { useDevicePlatform, getPlatformLabel, matchesPlatform } from "@/hooks/useDevicePlatform";
+import { useRecommendedProducts } from "@/hooks/useRecommendedProducts";
 import SoftwareRequestForm from "@/components/SoftwareRequestForm";
 
 export default function Index() {
