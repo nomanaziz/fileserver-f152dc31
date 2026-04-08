@@ -49,12 +49,13 @@ export function useMutateCategory() {
   const qc = useQueryClient();
   const upsert = useMutation({
     mutationFn: async (cat: Partial<Category> & { id?: string }) => {
-      if (cat.id) {
-        const { data, error } = await supabase.from("categories").update(cat).eq("id", cat.id).select().single();
+      const { id, created_at, updated_at, ...rest } = cat as any;
+      if (id) {
+        const { data, error } = await supabase.from("categories").update(rest).eq("id", id).select().single();
         if (error) throw error;
         return data;
       } else {
-        const { data, error } = await supabase.from("categories").insert(cat).select().single();
+        const { data, error } = await supabase.from("categories").insert(rest as any).select().single();
         if (error) throw error;
         return data;
       }
