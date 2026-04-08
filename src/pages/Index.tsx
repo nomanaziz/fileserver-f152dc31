@@ -1,18 +1,15 @@
-import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
 import ProductCard from "@/components/ProductCard";
 import CategorySidebar from "@/components/layout/CategorySidebar";
 import Layout from "@/components/layout/Layout";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, TrendingUp, Star, Clock } from "lucide-react";
+import { Search, Star, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Index() {
-  const [searchParams] = useSearchParams();
   const { data: featured, isLoading: fl } = useProducts({ featured: true, limit: 6 });
   const { data: latest, isLoading: ll } = useProducts({ limit: 12 });
   const { data: categories } = useCategories();
