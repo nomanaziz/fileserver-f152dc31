@@ -4,93 +4,72 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2 } from "lucide-react";
 
 export default function AdminCoupons() {
   const qc = useQueryClient();
-  const { data: coupons } = useQuery({
-    queryKey: ["admin-coupons"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("coupons").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-  const [editing, setEditing] = useState<any>(null);
-  const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [code, setCode] = useState(""); const [discountType, setDiscountType] = useState("percent");
+  const [discountValue, setDiscountValue] = useState(10); const [maxUses, setMaxUses] = useState<number | "">(100); const [expiresAt, setExpiresAt] = useState("");
 
-  const save = useMutation({
-    mutationFn: async (c: any) => {
-      const payload = { code: c.code, discount_percent: Number(c.discount_percent), max_uses: c.max_uses ? Number(c.max_uses) : null, expires_at: c.expires_at || null, is_active: c.is_active };
-      if (c.id) {
-        const { error } = await supabase.from("coupons").update(payload).eq("id", c.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("coupons").insert(payload);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-coupons"] }); setOpen(false); toast.success("Saved!"); },
-  });
+  const { data: coupons } = useQuery({ queryKey: ["admin-coupons"], queryFn: async () => { const { data, error } = await supabase.from("coupons").select("*").order("created_at", { ascending: false }); if (error) throw error; return data; } });
 
-  const remove = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("coupons").delete().eq("id", id);
-      if (error) throw error;
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = { code: code.toUpperCase(), discount_type: discountType, discount_value: discountValue, discount_percent: discountType === "percent" ? discountValue : 0, max_uses: maxUses || null, expires_at: expiresAt || null } as any;
+      if (editId) { const { error } = await supabase.from("coupons").update(payload).eq("id", editId); if (error) throw error; }
+      else { const { error } = await supabase.from("coupons").insert(payload); if (error) throw error; }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-coupons"] }); toast.success("Deleted!"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-coupons"] }); setDialogOpen(false); resetForm(); toast.success("Coupon saved!"); },
+    onError: (e: any) => toast.error(e.message),
   });
+  const toggleMutation = useMutation({ mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => { const { error } = await supabase.from("coupons").update({ is_active }).eq("id", id); if (error) throw error; }, onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-coupons"] }) });
+  const deleteMutation = useMutation({ mutationFn: async (id: string) => { const { error } = await supabase.from("coupons").delete().eq("id", id); if (error) throw error; }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-coupons"] }); toast.success("Coupon deleted"); } });
+  const resetForm = () => { setCode(""); setDiscountType("percent"); setDiscountValue(10); setMaxUses(100); setExpiresAt(""); setEditId(null); };
+  const openEdit = (c: any) => { setCode(c.code); setDiscountType(c.discount_type || "percent"); setDiscountValue(c.discount_value || c.discount_percent || 10); setMaxUses(c.max_uses ?? ""); setExpiresAt(c.expires_at ? c.expires_at.split("T")[0] : ""); setEditId(c.id); setDialogOpen(true); };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Coupons</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditing({ code: "", discount_percent: 10, max_uses: "", expires_at: "", is_active: true })}><Plus className="h-4 w-4 mr-1" /> Add Coupon</Button>
-          </DialogTrigger>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold">Coupons ({coupons?.length || 0})</h2>
+        <Dialog open={dialogOpen} onOpenChange={o => { setDialogOpen(o); if (!o) resetForm(); }}>
+          <DialogTrigger asChild><Button size="sm"><Plus className="mr-2 h-4 w-4" /> Add Coupon</Button></DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>{editing?.id ? "Edit" : "New"} Coupon</DialogTitle></DialogHeader>
-            {editing && (
-              <div className="space-y-4">
-                <div className="space-y-2"><Label>Code</Label><Input value={editing.code} onChange={(e) => setEditing({ ...editing, code: e.target.value.toUpperCase() })} /></div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label>Discount %</Label><Input type="number" value={editing.discount_percent} onChange={(e) => setEditing({ ...editing, discount_percent: e.target.value })} /></div>
-                  <div className="space-y-2"><Label>Max Uses</Label><Input type="number" value={editing.max_uses || ""} onChange={(e) => setEditing({ ...editing, max_uses: e.target.value })} placeholder="Unlimited" /></div>
-                </div>
-                <div className="space-y-2"><Label>Expires At</Label><Input type="datetime-local" value={editing.expires_at ? editing.expires_at.slice(0, 16) : ""} onChange={(e) => setEditing({ ...editing, expires_at: e.target.value })} /></div>
-                <label className="flex items-center gap-2"><input type="checkbox" checked={editing.is_active} onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })} /> Active</label>
-                <Button onClick={() => save.mutate(editing)} className="w-full">Save</Button>
+            <DialogHeader><DialogTitle>{editId ? "Edit" : "New"} Coupon</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2"><Label>Code</Label><Input value={code} onChange={e => setCode(e.target.value)} placeholder="SAVE20" /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>Type</Label><Select value={discountType} onValueChange={setDiscountType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="percent">Percentage (%)</SelectItem><SelectItem value="fixed">Fixed (৳)</SelectItem></SelectContent></Select></div>
+                <div className="space-y-2"><Label>Value</Label><Input type="number" value={discountValue} onChange={e => setDiscountValue(Number(e.target.value))} /></div>
               </div>
-            )}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>Max Uses</Label><Input type="number" value={maxUses} onChange={e => setMaxUses(e.target.value ? Number(e.target.value) : "")} /></div>
+                <div className="space-y-2"><Label>Expires</Label><Input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} /></div>
+              </div>
+              <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !code.trim()} className="w-full">Save</Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader><TableRow><TableHead>Code</TableHead><TableHead>Discount</TableHead><TableHead>Used</TableHead><TableHead>Max Uses</TableHead><TableHead>Expires</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-          <TableBody>
-            {coupons?.map((c) => (
-              <TableRow key={c.id}>
-                <TableCell className="font-mono font-medium">{c.code}</TableCell>
-                <TableCell>{c.discount_percent}%</TableCell>
-                <TableCell>{c.used_count}</TableCell>
-                <TableCell>{c.max_uses || "∞"}</TableCell>
-                <TableCell className="text-sm">{c.expires_at ? new Date(c.expires_at).toLocaleDateString() : "Never"}</TableCell>
-                <TableCell><Badge variant={c.is_active ? "default" : "secondary"}>{c.is_active ? "Active" : "Inactive"}</Badge></TableCell>
-                <TableCell className="text-right space-x-1">
-                  <Button variant="ghost" size="icon" onClick={() => { setEditing(c); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => { if (confirm("Delete?")) remove.mutate(c.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <Table><TableHeader><TableRow><TableHead>Code</TableHead><TableHead>Discount</TableHead><TableHead>Used</TableHead><TableHead>Max</TableHead><TableHead>Expires</TableHead><TableHead>Active</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
+        <TableBody>{coupons?.map(c => (
+          <TableRow key={c.id}>
+            <TableCell className="font-mono font-medium">{c.code}</TableCell>
+            <TableCell>{(c as any).discount_type === "fixed" ? `৳${(c as any).discount_value || c.discount_percent}` : `${(c as any).discount_value || c.discount_percent}%`}</TableCell>
+            <TableCell>{c.used_count}</TableCell><TableCell>{c.max_uses ?? "∞"}</TableCell>
+            <TableCell className="text-sm">{c.expires_at ? new Date(c.expires_at).toLocaleDateString() : "Never"}</TableCell>
+            <TableCell><Switch checked={c.is_active} onCheckedChange={v => toggleMutation.mutate({ id: c.id, is_active: v })} /></TableCell>
+            <TableCell><div className="flex gap-1"><Button variant="ghost" size="icon" onClick={() => openEdit(c)}><Edit className="h-4 w-4" /></Button><Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button></div></TableCell>
+          </TableRow>
+        ))}</TableBody>
+      </Table>
     </div>
   );
 }

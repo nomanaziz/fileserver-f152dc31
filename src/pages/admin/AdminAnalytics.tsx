@@ -1,80 +1,45 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-
-const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"];
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { format, subDays } from "date-fns";
 
 export default function AdminAnalytics() {
-  const { data: topProducts } = useQuery({
-    queryKey: ["analytics-top-products"],
+  const { data: dailyDownloads } = useQuery({
+    queryKey: ["admin-analytics-daily"],
     queryFn: async () => {
-      const { data } = await supabase.from("products").select("title, download_count, view_count").order("download_count", { ascending: false }).limit(10);
-      return data || [];
+      const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
+      const { data, error } = await supabase.from("download_history").select("downloaded_at").gte("downloaded_at", thirtyDaysAgo);
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      for (let i = 29; i >= 0; i--) { const day = format(subDays(new Date(), i), "yyyy-MM-dd"); counts[day] = 0; }
+      data?.forEach(d => { const day = format(new Date(d.downloaded_at), "yyyy-MM-dd"); if (counts[day] !== undefined) counts[day]++; });
+      return Object.entries(counts).map(([date, count]) => ({ date: format(new Date(date), "MMM d"), downloads: count }));
     },
   });
-
-  const { data: categoryStats } = useQuery({
-    queryKey: ["analytics-categories"],
+  const { data: topProducts } = useQuery({ queryKey: ["admin-analytics-top"], queryFn: async () => { const { data, error } = await supabase.from("products").select("title, download_count, view_count").order("download_count", { ascending: false }).limit(10); if (error) throw error; return data; } });
+  const { data: topCategories } = useQuery({
+    queryKey: ["admin-analytics-categories"],
     queryFn: async () => {
-      const { data: products } = await supabase.from("products").select("category_id, categories(name)");
-      const counts: Record<string, number> = {};
-      products?.forEach((p: any) => {
-        const name = p.categories?.name || "Uncategorized";
-        counts[name] = (counts[name] || 0) + 1;
-      });
-      return Object.entries(counts).map(([name, value]) => ({ name, value }));
+      const { data, error } = await supabase.from("products").select("category_id, download_count, categories(name)");
+      if (error) throw error;
+      const catMap: Record<string, { name: string; downloads: number }> = {};
+      data?.forEach((p: any) => { const name = p.categories?.name || "Uncategorized"; if (!catMap[name]) catMap[name] = { name, downloads: 0 }; catMap[name].downloads += p.download_count; });
+      return Object.values(catMap).sort((a, b) => b.downloads - a.downloads).slice(0, 10);
     },
   });
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Analytics</h1>
+    <div className="space-y-6">
+      <h2 className="text-lg font-semibold">Analytics</h2>
+      <Card>
+        <CardHeader><CardTitle>Daily Downloads (Last 30 Days)</CardTitle></CardHeader>
+        <CardContent><div className="h-[300px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={dailyDownloads || []}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="date" tick={{ fontSize: 11 }} /><YAxis /><Tooltip /><Bar dataKey="downloads" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div></CardContent>
+      </Card>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader><CardTitle>Top Products by Downloads</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={topProducts}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="title" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="download_count" fill="hsl(var(--primary))" name="Downloads" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>Products by Category</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie data={categoryStats} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-                  {categoryStats?.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Product Views vs Downloads</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={topProducts}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="title" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="view_count" fill="#10B981" name="Views" />
-                <Bar dataKey="download_count" fill="#3B82F6" name="Downloads" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <Card><CardHeader><CardTitle>Top Products</CardTitle></CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Downloads</TableHead><TableHead>Views</TableHead></TableRow></TableHeader><TableBody>{topProducts?.map((p, i) => <TableRow key={i}><TableCell className="font-medium">{p.title}</TableCell><TableCell>{p.download_count}</TableCell><TableCell>{p.view_count}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
+        <Card><CardHeader><CardTitle>Top Categories</CardTitle></CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Category</TableHead><TableHead>Downloads</TableHead></TableRow></TableHeader><TableBody>{topCategories?.map((c, i) => <TableRow key={i}><TableCell className="font-medium">{c.name}</TableCell><TableCell>{c.downloads}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
       </div>
     </div>
   );

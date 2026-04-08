@@ -1,71 +1,50 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Check, X, Trash2, Star } from "lucide-react";
+
+type FilterTab = "all" | "pending" | "approved";
 
 export default function AdminReviews() {
   const qc = useQueryClient();
-  const { data: reviews } = useQuery({
+  const [filter, setFilter] = useState<FilterTab>("pending");
+  const { data: reviews, isLoading } = useQuery({
     queryKey: ["admin-reviews"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("reviews").select("*, products(title)").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async () => { const { data, error } = await supabase.from("reviews").select("*, products(title), profiles(display_name)").order("created_at", { ascending: false }); if (error) throw error; return data; },
   });
+  const filtered = reviews?.filter(r => { if (filter === "pending") return !r.is_approved; if (filter === "approved") return r.is_approved; return true; });
+  const pendingCount = reviews?.filter(r => !r.is_approved).length || 0;
+  const approvedCount = reviews?.filter(r => r.is_approved).length || 0;
 
-  const toggleApprove = useMutation({
-    mutationFn: async ({ id, is_approved }: { id: string; is_approved: boolean }) => {
-      const { error } = await supabase.from("reviews").update({ is_approved }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-reviews"] }); toast.success("Updated!"); },
-  });
+  const approveMutation = useMutation({ mutationFn: async ({ id, approved }: { id: string; approved: boolean }) => { const { error } = await supabase.from("reviews").update({ is_approved: approved }).eq("id", id); if (error) throw error; }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-reviews"] }); toast.success("Review updated"); } });
+  const deleteMutation = useMutation({ mutationFn: async (id: string) => { const { error } = await supabase.from("reviews").delete().eq("id", id); if (error) throw error; }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-reviews"] }); toast.success("Review deleted"); } });
 
-  const remove = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("reviews").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-reviews"] }); toast.success("Deleted!"); },
-  });
-
-  const pending = reviews?.filter((r) => !r.is_approved) || [];
-  const approved = reviews?.filter((r) => r.is_approved) || [];
-
-  const ReviewTable = ({ items }: { items: any[] }) => (
-    <Table>
-      <TableHeader><TableRow><TableHead>Product</TableHead><TableHead>Rating</TableHead><TableHead>Comment</TableHead><TableHead>Date</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-      <TableBody>
-        {items.map((r: any) => (
-          <TableRow key={r.id}>
-            <TableCell>{r.products?.title || "-"}</TableCell>
-            <TableCell>{"⭐".repeat(r.rating)}</TableCell>
-            <TableCell className="max-w-xs truncate">{r.comment || "-"}</TableCell>
-            <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString()}</TableCell>
-            <TableCell className="text-right space-x-1">
-              <Button variant="ghost" size="sm" onClick={() => toggleApprove.mutate({ id: r.id, is_approved: !r.is_approved })}>{r.is_approved ? "Reject" : "Approve"}</Button>
-              <Button variant="ghost" size="sm" onClick={() => { if (confirm("Delete?")) remove.mutate(r.id); }}>Delete</Button>
-            </TableCell>
-          </TableRow>
-        ))}
-        {items.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-4">No reviews.</TableCell></TableRow>}
-      </TableBody>
-    </Table>
-  );
-
+  if (isLoading) return <div className="animate-pulse h-32 bg-card rounded-xl" />;
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Reviews</h1>
-      <Tabs defaultValue="pending">
-        <TabsList><TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger><TabsTrigger value="approved">Approved ({approved.length})</TabsTrigger></TabsList>
-        <TabsContent value="pending"><div className="border rounded-lg"><ReviewTable items={pending} /></div></TabsContent>
-        <TabsContent value="approved"><div className="border rounded-lg"><ReviewTable items={approved} /></div></TabsContent>
-      </Tabs>
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold">Reviews ({reviews?.length || 0})</h2>
+      <Tabs value={filter} onValueChange={v => setFilter(v as FilterTab)}><TabsList><TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger><TabsTrigger value="approved">Approved ({approvedCount})</TabsTrigger><TabsTrigger value="all">All ({reviews?.length || 0})</TabsTrigger></TabsList></Tabs>
+      <Table><TableHeader><TableRow><TableHead>User</TableHead><TableHead>Product</TableHead><TableHead>Rating</TableHead><TableHead>Comment</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
+        <TableBody>{filtered?.map(r => (
+          <TableRow key={r.id}>
+            <TableCell className="text-sm">{(r as any).profiles?.display_name || "User"}</TableCell>
+            <TableCell className="text-sm">{(r as any).products?.title || "—"}</TableCell>
+            <TableCell><div className="flex items-center gap-1"><Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /><span className="text-sm">{r.rating}</span></div></TableCell>
+            <TableCell className="text-sm max-w-[200px] truncate">{r.comment}</TableCell>
+            <TableCell><Badge variant={r.is_approved ? "default" : "secondary"}>{r.is_approved ? "Approved" : "Pending"}</Badge></TableCell>
+            <TableCell><div className="flex gap-1">
+              {!r.is_approved && <Button variant="ghost" size="icon" onClick={() => approveMutation.mutate({ id: r.id, approved: true })}><Check className="h-4 w-4 text-green-500" /></Button>}
+              {r.is_approved && <Button variant="ghost" size="icon" onClick={() => approveMutation.mutate({ id: r.id, approved: false })}><X className="h-4 w-4 text-orange-500" /></Button>}
+              <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(r.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+            </div></TableCell>
+          </TableRow>
+        ))}</TableBody>
+      </Table>
     </div>
   );
 }
