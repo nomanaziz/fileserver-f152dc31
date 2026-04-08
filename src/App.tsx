@@ -71,6 +71,8 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/page/:slug" element={<StaticPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/live-tv" element={<LiveTV />} />
 
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
