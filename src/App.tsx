@@ -29,7 +29,7 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminServers from "./pages/admin/AdminServers";
-import AdminMessages from "./pages/admin/AdminMessages";
+import AdminContacts from "./pages/admin/AdminContacts";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminPaymentMethods from "./pages/admin/AdminPaymentMethods";
