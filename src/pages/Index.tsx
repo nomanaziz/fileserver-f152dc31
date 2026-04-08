@@ -156,9 +156,9 @@ export default function Index() {
                     <div key={i} className="aspect-video rounded-lg shimmer" />
                   ))}
                 </div>
-              ) : latest && latest.length > 0 ? (
+              ) : sortedLatest && sortedLatest.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {latest.map((p) => (
+                  {sortedLatest.map((p) => (
                     <ProductCard key={p.id} product={p} variant="grid" />
                   ))}
                 </div>
