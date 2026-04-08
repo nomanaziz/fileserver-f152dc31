@@ -20,6 +20,8 @@ import BlogPost from "./pages/BlogPost";
 import Contact from "./pages/Contact";
 import StaticPage from "./pages/StaticPage";
 import Dashboard from "./pages/Dashboard";
+import Pricing from "./pages/Pricing";
+import LiveTV from "./pages/LiveTV";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
