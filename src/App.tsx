@@ -20,6 +20,8 @@ import BlogPost from "./pages/BlogPost";
 import Contact from "./pages/Contact";
 import StaticPage from "./pages/StaticPage";
 import Dashboard from "./pages/Dashboard";
+import Pricing from "./pages/Pricing";
+import LiveTV from "./pages/LiveTV";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -69,6 +71,8 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/page/:slug" element={<StaticPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/live-tv" element={<LiveTV />} />
 
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
