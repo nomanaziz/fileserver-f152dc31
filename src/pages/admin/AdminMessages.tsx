@@ -1,10 +1,12 @@
-import AdminLayout from "@/components/admin/AdminLayout";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function AdminMessages() {
+  const qc = useQueryClient();
   const { data: messages } = useQuery({
     queryKey: ["admin-messages"],
     queryFn: async () => {
@@ -14,25 +16,37 @@ export default function AdminMessages() {
     },
   });
 
+  const markRead = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("contact_messages").update({ is_read: true }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-messages"] }); toast.success("Marked as read"); },
+  });
+
   return (
-    <AdminLayout>
-      <h1 className="text-2xl font-bold mb-6">যোগাযোগ মেসেজ</h1>
+    <div>
+      <h1 className="text-2xl font-bold mb-6">Contact Messages</h1>
       <div className="border rounded-lg">
         <Table>
-          <TableHeader><TableRow><TableHead>নাম</TableHead><TableHead>ইমেইল</TableHead><TableHead>বিষয়</TableHead><TableHead>তারিখ</TableHead><TableHead>স্ট্যাটাস</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Subject</TableHead><TableHead>Message</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
           <TableBody>
-            {messages?.map((m: any) => (
+            {messages?.map((m) => (
               <TableRow key={m.id}>
                 <TableCell>{m.name}</TableCell>
                 <TableCell>{m.email}</TableCell>
                 <TableCell>{m.subject || "-"}</TableCell>
-                <TableCell className="text-sm">{new Date(m.created_at).toLocaleDateString("bn-BD")}</TableCell>
-                <TableCell><Badge variant={m.is_read ? "secondary" : "default"}>{m.is_read ? "পঠিত" : "অপঠিত"}</Badge></TableCell>
+                <TableCell className="max-w-xs truncate">{m.message}</TableCell>
+                <TableCell className="text-sm">{new Date(m.created_at).toLocaleDateString()}</TableCell>
+                <TableCell><Badge variant={m.is_read ? "secondary" : "default"}>{m.is_read ? "Read" : "Unread"}</Badge></TableCell>
+                <TableCell className="text-right">
+                  {!m.is_read && <Button variant="ghost" size="sm" onClick={() => markRead.mutate(m.id)}>Mark Read</Button>}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
-    </AdminLayout>
+    </div>
   );
 }

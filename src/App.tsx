@@ -20,6 +20,8 @@ import BlogPost from "./pages/BlogPost";
 import Contact from "./pages/Contact";
 import StaticPage from "./pages/StaticPage";
 import Dashboard from "./pages/Dashboard";
+
+import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminCategories from "./pages/admin/AdminCategories";
@@ -27,6 +29,21 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminServers from "./pages/admin/AdminServers";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminOrders from "./pages/admin/AdminOrders";
+import AdminPaymentMethods from "./pages/admin/AdminPaymentMethods";
+import AdminRequests from "./pages/admin/AdminRequests";
+import AdminReviews from "./pages/admin/AdminReviews";
+import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
+import AdminCoupons from "./pages/admin/AdminCoupons";
+import AdminScraping from "./pages/admin/AdminScraping";
+import AdminAds from "./pages/admin/AdminAds";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminActivityLog from "./pages/admin/AdminActivityLog";
+import AdminPages from "./pages/admin/AdminPages";
+import AdminMenuItems from "./pages/admin/AdminMenuItems";
+import AdminBlog from "./pages/admin/AdminBlog";
+import AdminChat from "./pages/admin/AdminChat";
+import AdminLiveTV from "./pages/admin/AdminLiveTV";
 
 const queryClient = new QueryClient();
 
@@ -52,13 +69,32 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/page/:slug" element={<StaticPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/products" element={<AdminProducts />} />
-            <Route path="/admin/categories" element={<AdminCategories />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/servers" element={<AdminServers />} />
-            <Route path="/admin/messages" element={<AdminMessages />} />
-            <Route path="/admin/settings" element={<AdminSettings />} />
+
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="products" element={<AdminProducts />} />
+              <Route path="categories" element={<AdminCategories />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="orders" element={<AdminOrders />} />
+              <Route path="payment-methods" element={<AdminPaymentMethods />} />
+              <Route path="requests" element={<AdminRequests />} />
+              <Route path="reviews" element={<AdminReviews />} />
+              <Route path="subscriptions" element={<AdminSubscriptions />} />
+              <Route path="coupons" element={<AdminCoupons />} />
+              <Route path="servers" element={<AdminServers />} />
+              <Route path="scraping" element={<AdminScraping />} />
+              <Route path="ads" element={<AdminAds />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="logs" element={<AdminActivityLog />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="blog" element={<AdminBlog />} />
+              <Route path="pages" element={<AdminPages />} />
+              <Route path="menu" element={<AdminMenuItems />} />
+              <Route path="messages" element={<AdminMessages />} />
+              <Route path="chat" element={<AdminChat />} />
+              <Route path="live-tv" element={<AdminLiveTV />} />
+            </Route>
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
