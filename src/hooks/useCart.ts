@@ -10,13 +10,18 @@ export function useCart() {
       if (!user) return [];
       const { data, error } = await supabase
         .from("cart_items")
-        .select("*, products(id, title, slug, thumbnail_url, price, is_paid)")
+        .select("*, products(id, title, slug, thumbnail_url, price, is_paid, categories(name))")
         .eq("user_id", user.id);
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
+}
+
+export function useCartCount() {
+  const { data } = useCart();
+  return data?.length || 0;
 }
 
 export function useCartMutations() {
