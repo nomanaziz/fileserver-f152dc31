@@ -36,7 +36,7 @@ const adminLinks = [
   { title: "Scraping", url: "/admin/scraping", icon: Globe },
   { title: "Ads", url: "/admin/ads", icon: Image },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
-  { title: "Activity Log", url: "/admin/logs", icon: Activity },
+  { title: "Activity Log", url: "/admin/activity", icon: Activity },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
