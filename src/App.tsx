@@ -29,7 +29,7 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminServers from "./pages/admin/AdminServers";
-import AdminMessages from "./pages/admin/AdminMessages";
+import AdminContacts from "./pages/admin/AdminContacts";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminPaymentMethods from "./pages/admin/AdminPaymentMethods";
@@ -89,12 +89,12 @@ const App = () => (
               <Route path="scraping" element={<AdminScraping />} />
               <Route path="ads" element={<AdminAds />} />
               <Route path="analytics" element={<AdminAnalytics />} />
-              <Route path="logs" element={<AdminActivityLog />} />
+              <Route path="activity" element={<AdminActivityLog />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="blog" element={<AdminBlog />} />
               <Route path="pages" element={<AdminPages />} />
-              <Route path="menu" element={<AdminMenuItems />} />
-              <Route path="messages" element={<AdminMessages />} />
+              <Route path="menu-items" element={<AdminMenuItems />} />
+              <Route path="contacts" element={<AdminContacts />} />
               <Route path="chat" element={<AdminChat />} />
               <Route path="live-tv" element={<AdminLiveTV />} />
             </Route>

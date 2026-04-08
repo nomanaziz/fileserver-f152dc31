@@ -36,15 +36,15 @@ const adminLinks = [
   { title: "Scraping", url: "/admin/scraping", icon: Globe },
   { title: "Ads", url: "/admin/ads", icon: Image },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
-  { title: "Activity Log", url: "/admin/logs", icon: Activity },
+  { title: "Activity Log", url: "/admin/activity", icon: Activity },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
 const cmsLinks = [
   { title: "Blog Posts", url: "/admin/blog", icon: Newspaper },
   { title: "Pages", url: "/admin/pages", icon: FileText },
-  { title: "Menu Items", url: "/admin/menu", icon: MenuIcon },
-  { title: "Messages", url: "/admin/messages", icon: Mail },
+  { title: "Menu Items", url: "/admin/menu-items", icon: MenuIcon },
+  { title: "Contacts", url: "/admin/contacts", icon: Mail },
   { title: "Live Chat", url: "/admin/chat", icon: MessageSquare },
   { title: "Live TV", url: "/admin/live-tv", icon: Tv },
 ];
