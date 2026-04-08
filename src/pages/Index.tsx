@@ -79,6 +79,38 @@ export default function Index() {
         <div className="flex gap-8">
           {/* Main content */}
           <div className="flex-1 min-w-0">
+            {/* Recommended for Your Device */}
+            {platform !== "unknown" && (
+              <section className="mb-10">
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-md bg-accent/20 flex items-center justify-center">
+                      <PlatformIcon className="h-3.5 w-3.5 text-accent-foreground" />
+                    </div>
+                    <h2 className="text-xl font-bold">Recommended for You</h2>
+                    <Badge variant="secondary" className="text-[10px] px-2 py-0.5">{platformLabel}</Badge>
+                  </div>
+                </div>
+                {loadingRecommended ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="aspect-video rounded-lg shimmer" />
+                    ))}
+                  </div>
+                ) : recommended && recommended.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {recommended.slice(0, 6).map((p) => (
+                      <ProductCard key={p.id} product={p} variant="grid" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 rounded-xl border border-dashed border-border">
+                    <p className="text-muted-foreground text-sm">No {platformLabel} content available yet.</p>
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* Trending — List view */}
             <section className="mb-10">
               <div className="flex items-center justify-between mb-5">
@@ -95,9 +127,9 @@ export default function Index() {
                     <div key={i} className="h-16 rounded-lg shimmer" />
                   ))}
                 </div>
-              ) : featured && featured.length > 0 ? (
+              ) : sortedFeatured && sortedFeatured.length > 0 ? (
                 <div className="space-y-1">
-                  {featured.slice(0, 6).map((p) => (
+                  {sortedFeatured.slice(0, 6).map((p) => (
                     <ProductCard key={p.id} product={p} variant="list" />
                   ))}
                 </div>
