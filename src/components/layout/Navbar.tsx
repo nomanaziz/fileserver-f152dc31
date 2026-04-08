@@ -67,11 +67,18 @@ export default function Navbar() {
     queryFn: async () => {
       const { data } = await supabase
         .from("menu_items")
-        .select("id, label, url, sort_order")
+        .select("id, label, url, icon, sort_order, parent_id")
         .eq("location", "header")
         .eq("is_active", true)
+        .is("parent_id", null)
         .order("sort_order");
-      return data || [];
+      // Filter out items that duplicate category links, Home, Pricing, Live TV (already rendered)
+      const skipUrls = new Set(["/", "/pricing", "/live-tv"]);
+      return (data || []).filter(item => {
+        if (skipUrls.has(item.url)) return false;
+        if (item.url.startsWith("/category/")) return false;
+        return true;
+      });
     },
     staleTime: 5 * 60 * 1000,
   });
