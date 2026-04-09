@@ -44,8 +44,40 @@ export default function Index() {
   return (
     <Layout>
       {/* Compact Hero / Search */}
-      <section className="py-8 md:py-10 border-b border-border bg-muted/30">
-        <div className="container mx-auto px-4">
+      <section className="relative overflow-hidden py-8 md:py-10 border-b border-border bg-muted/30">
+        {/* Background floating icons */}
+        <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
+          {[
+            { Icon: Download, top: '8%', left: '5%', size: 28, rotate: -15 },
+            { Icon: File, top: '20%', left: '15%', size: 20, rotate: 12 },
+            { Icon: Folder, top: '65%', left: '8%', size: 24, rotate: -25 },
+            { Icon: Monitor, top: '12%', left: '80%', size: 22, rotate: 20 },
+            { Icon: Smartphone, top: '55%', left: '90%', size: 18, rotate: -10 },
+            { Icon: Gamepad2, top: '75%', left: '25%', size: 26, rotate: 30 },
+            { Icon: Film, top: '30%', left: '92%', size: 20, rotate: -20 },
+            { Icon: Music, top: '80%', left: '70%', size: 22, rotate: 15 },
+            { Icon: Code, top: '10%', left: '45%', size: 18, rotate: -30 },
+            { Icon: Image, top: '70%', left: '50%', size: 24, rotate: 8 },
+            { Icon: HardDrive, top: '40%', left: '3%', size: 20, rotate: -18 },
+            { Icon: Wifi, top: '25%', left: '70%', size: 16, rotate: 25 },
+            { Icon: Globe, top: '60%', left: '35%', size: 22, rotate: -12 },
+            { Icon: Shield, top: '15%', left: '60%', size: 18, rotate: 22 },
+            { Icon: Zap, top: '85%', left: '85%', size: 20, rotate: -28 },
+            { Icon: Cloud, top: '45%', left: '95%', size: 24, rotate: 10 },
+            { Icon: Database, top: '50%', left: '12%', size: 18, rotate: -8 },
+            { Icon: Terminal, top: '35%', left: '55%', size: 16, rotate: 35 },
+            { Icon: Download, top: '90%', left: '45%', size: 20, rotate: -22 },
+            { Icon: Laptop, top: '5%', left: '30%', size: 22, rotate: 18 },
+          ].map(({ Icon, top, left, size, rotate }, i) => (
+            <Icon
+              key={i}
+              className="absolute text-foreground opacity-[0.04]"
+              style={{ top, left, width: size, height: size, transform: `rotate(${rotate}deg)` }}
+            />
+          ))}
+        </div>
+
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-xl mx-auto text-center mb-6">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[11px] font-medium mb-3">
               <Sparkles className="h-3 w-3" />
