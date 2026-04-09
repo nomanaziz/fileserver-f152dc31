@@ -531,6 +531,36 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          message: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pages: {
         Row: {
           content: string | null
@@ -982,12 +1012,43 @@ export type Database = {
         }
         Relationships: []
       }
+      software_request_subscribers: {
+        Row: {
+          created_at: string
+          id: string
+          request_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          request_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          request_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "software_request_subscribers_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "software_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       software_requests: {
         Row: {
           admin_note: string | null
           created_at: string
           description: string | null
+          fulfilled_product_id: string | null
           id: string
+          is_notified: boolean
           status: string
           title: string
           updated_at: string
@@ -997,7 +1058,9 @@ export type Database = {
           admin_note?: string | null
           created_at?: string
           description?: string | null
+          fulfilled_product_id?: string | null
           id?: string
+          is_notified?: boolean
           status?: string
           title: string
           updated_at?: string
@@ -1007,13 +1070,23 @@ export type Database = {
           admin_note?: string | null
           created_at?: string
           description?: string | null
+          fulfilled_product_id?: string | null
           id?: string
+          is_notified?: boolean
           status?: string
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "software_requests_fulfilled_product_id_fkey"
+            columns: ["fulfilled_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscription_plans: {
         Row: {

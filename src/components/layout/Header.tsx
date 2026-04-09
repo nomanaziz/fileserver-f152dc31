@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Menu, X, ShoppingCart, Heart, User, LogOut, Shield } from "lucide-react";
+import NotificationBell from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
@@ -89,6 +90,7 @@ export default function Header() {
         <div className="flex items-center gap-1">
           {user ? (
             <>
+              <NotificationBell />
               <Button variant="ghost" size="icon" asChild>
                 <Link to="/favorites">
                   <Heart className="h-5 w-5" />
