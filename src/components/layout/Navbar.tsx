@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import {
   Search, Menu, User, LogOut, Heart, Download, Shield, Command,
-  ShoppingCart, Home, Crown, ChevronDown, ExternalLink, Radio,
+  ShoppingCart, Home, Crown, ChevronDown, ExternalLink, Radio, Store,
 } from "lucide-react";
 import defaultLogo from "@/assets/fileserver-white-logo.png";
 import { Button } from "@/components/ui/button";
@@ -163,6 +163,9 @@ export default function Navbar() {
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate("/favorites")} className="gap-2 cursor-pointer text-sm">
                       <Heart className="h-3.5 w-3.5" /> Favorites
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/become-vendor")} className="gap-2 cursor-pointer text-sm">
+                      <Store className="h-3.5 w-3.5" /> Sell Products
                     </DropdownMenuItem>
                     {(isAdmin || isModerator) && (
                       <>

@@ -24,6 +24,8 @@ import Pricing from "./pages/Pricing";
 import LiveTV from "./pages/LiveTV";
 import CheckoutPage from "./pages/CheckoutPage";
 import SubscriptionCheckout from "./pages/SubscriptionCheckout";
+import BecomeVendor from "./pages/BecomeVendor";
+import VendorStore from "./pages/VendorStore";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -48,6 +50,14 @@ import AdminMenuItems from "./pages/admin/AdminMenuItems";
 import AdminBlog from "./pages/admin/AdminBlog";
 import AdminChat from "./pages/admin/AdminChat";
 import AdminLiveTV from "./pages/admin/AdminLiveTV";
+import AdminVendors from "./pages/admin/AdminVendors";
+
+import VendorLayout from "./pages/vendor/VendorLayout";
+import VendorDashboard from "./pages/vendor/VendorDashboard";
+import VendorProducts from "./pages/vendor/VendorProducts";
+import VendorEarnings from "./pages/vendor/VendorEarnings";
+import VendorPayouts from "./pages/vendor/VendorPayouts";
+import VendorSettings from "./pages/vendor/VendorSettings";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +87,16 @@ const App = () => (
             <Route path="/live-tv" element={<LiveTV />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/checkout/subscription" element={<SubscriptionCheckout />} />
+            <Route path="/become-vendor" element={<BecomeVendor />} />
+            <Route path="/store/:id" element={<VendorStore />} />
+
+            <Route path="/vendor" element={<VendorLayout />}>
+              <Route index element={<VendorDashboard />} />
+              <Route path="products" element={<VendorProducts />} />
+              <Route path="earnings" element={<VendorEarnings />} />
+              <Route path="payouts" element={<VendorPayouts />} />
+              <Route path="settings" element={<VendorSettings />} />
+            </Route>
 
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
@@ -101,6 +121,7 @@ const App = () => (
               <Route path="contacts" element={<AdminContacts />} />
               <Route path="chat" element={<AdminChat />} />
               <Route path="live-tv" element={<AdminLiveTV />} />
+              <Route path="vendors" element={<AdminVendors />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
