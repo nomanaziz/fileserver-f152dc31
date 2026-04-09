@@ -22,6 +22,8 @@ import StaticPage from "./pages/StaticPage";
 import Dashboard from "./pages/Dashboard";
 import Pricing from "./pages/Pricing";
 import LiveTV from "./pages/LiveTV";
+import CheckoutPage from "./pages/CheckoutPage";
+import SubscriptionCheckout from "./pages/SubscriptionCheckout";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
