@@ -1,38 +1,54 @@
 
 
-# Vercel Deployment Setup
+# Favorites & Cart 404 Fix + Product Card Heart Icon + Admin Cart/Checkout Analytics
 
 ## Summary
-Vercel-এ deploy করার জন্য দুটি জিনিস দরকার: (1) `vercel.json` config file — SPA routing handle করবে যাতে 404 না আসে page refresh-এ, (2) project structure already Vite-based তাই build command ঠিক আছে।
+তিনটি সমস্যা সমাধান: (1) `/favorites` ও `/cart` route নেই — 404 আসে, এগুলো তৈরি করতে হবে, (2) ProductCard-এ heart/favorite icon যোগ, (3) Admin dashboard-এ cart, favorites, abandoned checkout analytics দেখানো।
 
-## Changes
+## Implementation
 
-### 1. Create `vercel.json`
-Project root-এ `vercel.json` তৈরি করবো:
-- SPA rewrite rule: সব route `/index.html`-এ redirect করবে (React Router handle করবে)
-- এতে `/product/xyz`, `/admin/settings` ইত্যাদি deep links page refresh-এও কাজ করবে
-- Static assets (JS, CSS, images) normal-ভাবে serve হবে
+### 1. Create `/favorites` page (`src/pages/FavoritesPage.tsx`)
+- User-এর সব favorite products grid-এ দেখাবে
+- Favorite remove button সহ
+- Login required — না থাকলে login-এ redirect
 
-```json
-{
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
-```
+### 2. Create `/cart` page (`src/pages/CartPage.tsx`)
+- Cart items list — product image, title, price
+- Remove from cart button
+- "চেকআউট করুন" button → `/checkout`-এ যাবে
+- Empty cart state
+- Login required
 
-### 2. No other changes needed
-- Vite build output (`dist/`) Vercel auto-detect করে
-- `package.json` scripts ঠিক আছে (`build: vite build`)
-- Environment variables (VITE_SUPABASE_URL etc.) Vercel dashboard → Settings → Environment Variables-এ add করতে হবে
+### 3. Add routes to `App.tsx`
+- `/favorites` → FavoritesPage
+- `/cart` → CartPage
 
-## Vercel Deploy Steps (for user)
-1. GitHub-এ repo push করো
-2. Vercel-এ import করো
-3. Framework: Vite auto-detect হবে
-4. Environment Variables add করো: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`
-5. Deploy
+### 4. ProductCard-এ Heart icon যোগ (`src/components/ProductCard.tsx`)
+- Grid variant: image-এর উপরে top-left corner-এ ছোট heart icon
+- Click করলে favorite toggle হবে (filled red = favorited, outline = not)
+- `useToggleFavorite` hook ব্যবহার করবে
+- Not logged in হলে login-এ redirect
+
+### 5. Admin Dashboard-এ Cart & Checkout Analytics
+`src/pages/admin/AdminDashboard.tsx`-এ নতুন cards যোগ:
+- Total cart items (সব user-এর cart count)
+- Total favorites count
+- Abandoned checkouts (pending payment records যেখানে status = 'pending')
+
+**Database migration**: Admin-কে cart_items ও favorites দেখতে দিতে RLS policy যোগ করতে হবে:
+- `cart_items`: Admin SELECT policy
+- `favorites`: Admin SELECT policy
 
 ## Files
-**Create:** `vercel.json`
+
+**Create:**
+- `src/pages/FavoritesPage.tsx` — favorites listing page
+- `src/pages/CartPage.tsx` — cart page with items + checkout button
+
+**Edit:**
+- `src/App.tsx` — add `/favorites` and `/cart` routes
+- `src/components/ProductCard.tsx` — add heart/favorite toggle icon
+- `src/pages/admin/AdminDashboard.tsx` — add cart/favorites/abandoned checkout stats
+
+**Migration:** Add admin SELECT policies on `cart_items` and `favorites` tables
 
