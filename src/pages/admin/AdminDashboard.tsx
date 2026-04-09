@@ -111,7 +111,7 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         {secondaryCards.map((c) => (
           <Card key={c.title}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
