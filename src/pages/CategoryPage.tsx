@@ -6,6 +6,7 @@ import ProductCard from "@/components/ProductCard";
 import CategorySidebar from "@/components/layout/CategorySidebar";
 import Layout from "@/components/layout/Layout";
 import { Skeleton } from "@/components/ui/skeleton";
+import AdPlaceholder from "@/components/AdPlaceholder";
 
 export default function CategoryPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -39,6 +40,9 @@ export default function CategoryPage() {
                 selectedSubcategoryIds={selectedSubcategoryIds}
                 onSelectionChange={setSelectedSubcategoryIds}
               />
+              <div className="mt-6">
+                <AdPlaceholder placement="sidebar" />
+              </div>
             </div>
           </aside>
           <div>

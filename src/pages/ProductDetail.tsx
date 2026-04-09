@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
+import AdPlaceholder from "@/components/AdPlaceholder";
 
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -110,6 +111,9 @@ export default function ProductDetail() {
                 </div>
               </div>
             )}
+
+            {/* In-Content Ad */}
+            <AdPlaceholder placement="in-content" />
 
             {/* Description */}
             <div>
@@ -241,6 +245,9 @@ export default function ProductDetail() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Before Download Ad */}
+            <AdPlaceholder placement="before-download" />
 
             {/* Download links — only show if accessible */}
             {canAccess && downloads && downloads.length > 0 && (

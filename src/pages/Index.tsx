@@ -11,6 +11,7 @@ import { useDevicePlatform, getPlatformLabel, matchesPlatform } from "@/hooks/us
 import { useRecommendedProducts } from "@/hooks/useRecommendedProducts";
 import SoftwareRequestForm from "@/components/SoftwareRequestForm";
 import CategoryBanners from "@/components/CategoryBanners";
+import AdPlaceholder from "@/components/AdPlaceholder";
 
 export default function Index() {
   const [search, setSearch] = useState("");
@@ -77,6 +78,11 @@ export default function Index() {
 
       {/* Category Banners */}
       <CategoryBanners />
+
+      {/* Header Banner Ad */}
+      <div className="container mx-auto px-4 pt-6">
+        <AdPlaceholder placement="header-banner" />
+      </div>
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex gap-8">
@@ -218,6 +224,11 @@ export default function Index() {
 
             {/* Software Request Form */}
             <SoftwareRequestForm />
+
+            {/* Sidebar Ad */}
+            <div className="mb-6">
+              <AdPlaceholder placement="sidebar" />
+            </div>
 
             {/* Quick Categories */}
             <div className="rounded-xl border border-border bg-background p-4">
