@@ -26,6 +26,7 @@ const adminLinks = [
   { title: "Products", url: "/admin/products", icon: Package },
   { title: "Categories", url: "/admin/categories", icon: FolderTree },
   { title: "Users", url: "/admin/users", icon: Users },
+  { title: "Vendors", url: "/admin/vendors", icon: Shield },
   { title: "Orders", url: "/admin/orders", icon: CreditCard },
   { title: "Payments", url: "/admin/payment-methods", icon: Wallet },
   { title: "Requests", url: "/admin/requests", icon: MessageSquare },

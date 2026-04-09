@@ -164,6 +164,9 @@ export default function Navbar() {
                     <DropdownMenuItem onClick={() => navigate("/favorites")} className="gap-2 cursor-pointer text-sm">
                       <Heart className="h-3.5 w-3.5" /> Favorites
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/become-vendor")} className="gap-2 cursor-pointer text-sm">
+                      <Store className="h-3.5 w-3.5" /> Sell Products
+                    </DropdownMenuItem>
                     {(isAdmin || isModerator) && (
                       <>
                         <DropdownMenuSeparator />
