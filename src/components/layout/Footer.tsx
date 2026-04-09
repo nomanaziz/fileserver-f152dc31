@@ -1,18 +1,8 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Github, Twitter, Youtube, Facebook, Send as Telegram, MessageCircle } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Youtube, Facebook, Send as Telegram } from "lucide-react";
 import defaultLogo from "@/assets/fileserver-white-logo.png";
-
-const socialIcons: Record<string, any> = {
-  facebook_url: Facebook,
-  twitter_url: Twitter,
-  youtube_url: Youtube,
-  telegram_url: Telegram,
-  whatsapp_url: MessageCircle,
-};
 
 export default function Footer() {
   const { data: settings } = useQuery({
@@ -33,7 +23,6 @@ export default function Footer() {
     },
   });
 
-  // Group menu items: parent items (no parent_id) become section headers, children become links
   const parentItems = menuItems?.filter(item => !item.parent_id) || [];
   const childItems = menuItems?.filter(item => item.parent_id) || [];
 
@@ -43,36 +32,30 @@ export default function Footer() {
     links: childItems.filter(child => child.parent_id === parent.id),
   }));
 
-  // Standalone items (no parent, no children pointing to them) go into a general section
   const parentIds = new Set(childItems.map(c => c.parent_id));
   const standaloneItems = parentItems.filter(p => !parentIds.has(p.id));
 
-  const socialLinks = Object.entries(socialIcons)
-    .filter(([key]) => settings?.[key])
-    .map(([key, Icon]) => ({ url: settings![key], Icon }));
+  const socialLinks = [
+    { key: "facebook_url", Icon: Facebook },
+    { key: "youtube_url", Icon: Youtube },
+    { key: "telegram_url", Icon: Telegram },
+  ].filter(s => settings?.[s.key]).map(s => ({ url: settings![s.key], Icon: s.Icon }));
 
   return (
     <footer className="border-t border-border mt-auto bg-muted/40">
       <div className="container mx-auto px-4 py-10">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {/* Brand section */}
+          {/* Brand */}
           <div className="col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-3">
               <img src={settings?.site_logo || defaultLogo} alt={settings?.site_name || "FileServer"} className="h-8 object-contain" />
             </Link>
-            <p className="text-xs text-muted-foreground leading-relaxed mb-4 max-w-xs">
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
               Your trusted source for software, apps, games, and digital content. Fast downloads, always free.
             </p>
-            <div className="flex gap-2">
-              <Input placeholder="Your email" className="h-8 text-xs bg-background border-border max-w-[200px]" />
-              <Button size="sm" className="h-8 text-xs px-3">
-                <Mail className="h-3 w-3 mr-1" />
-                Subscribe
-              </Button>
-            </div>
           </div>
 
-          {/* Dynamic footer sections from admin */}
+          {/* Dynamic footer sections */}
           {sections.filter(s => s.links.length > 0).map((section, idx) => (
             <div key={idx}>
               <h4 className="font-semibold text-xs mb-3 text-foreground uppercase tracking-wider">{section.title}</h4>
@@ -90,7 +73,6 @@ export default function Footer() {
             </div>
           ))}
 
-          {/* Standalone footer links (items without children) */}
           {standaloneItems.length > 0 && (
             <div>
               <h4 className="font-semibold text-xs mb-3 text-foreground uppercase tracking-wider">লিংক</h4>
@@ -108,7 +90,6 @@ export default function Footer() {
             </div>
           )}
 
-          {/* Fallback if no menu items exist */}
           {(!menuItems || menuItems.length === 0) && (
             <div className="col-span-2">
               <p className="text-xs text-muted-foreground">
@@ -128,7 +109,7 @@ export default function Footer() {
                 <Icon className="h-4 w-4" />
               </a>
             )) : (
-              [Github, Twitter, Youtube].map((Icon, i) => (
+              [Facebook, Youtube, Telegram].map((Icon, i) => (
                 <a key={i} href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                   <Icon className="h-4 w-4" />
                 </a>

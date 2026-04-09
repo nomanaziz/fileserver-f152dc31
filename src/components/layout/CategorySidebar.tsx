@@ -1,66 +1,73 @@
-import { Link, useParams } from "react-router-dom";
 import { useCategories } from "@/hooks/useCategories";
-import { cn } from "@/lib/utils";
-import { Folder } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
-export default function CategorySidebar() {
+interface CategorySidebarProps {
+  parentCategoryId?: string;
+  selectedSubcategoryIds: string[];
+  onSelectionChange: (ids: string[]) => void;
+}
+
+export default function CategorySidebar({
+  parentCategoryId,
+  selectedSubcategoryIds,
+  onSelectionChange,
+}: CategorySidebarProps) {
   const { data: categories, isLoading } = useCategories();
-  const { slug } = useParams();
 
   if (isLoading) {
     return (
       <div className="space-y-2">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-9 rounded-md bg-muted animate-pulse" />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-8 rounded-md bg-muted animate-pulse" />
         ))}
       </div>
     );
   }
 
-  const parents = categories?.filter((c) => !c.parent_id) || [];
+  // Find subcategories of the current parent
+  const subcategories = categories?.filter((c) => c.parent_id === parentCategoryId) || [];
+
+  if (subcategories.length === 0) return null;
+
+  const toggle = (id: string) => {
+    if (selectedSubcategoryIds.includes(id)) {
+      onSelectionChange(selectedSubcategoryIds.filter((s) => s !== id));
+    } else {
+      onSelectionChange([...selectedSubcategoryIds, id]);
+    }
+  };
 
   return (
     <nav className="space-y-1">
-      <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-3 px-3">
-        ক্যাটাগরি
+      <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-3 px-1">
+        সাবক্যাটাগরি ফিল্টার
       </h3>
-      {parents.map((cat) => {
-        const children = categories?.filter((c) => c.parent_id === cat.id) || [];
-        return (
-          <div key={cat.id}>
-            <Link
-              to={`/category/${cat.slug}`}
-              className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
-                slug === cat.slug
-                  ? "bg-primary text-primary-foreground font-medium"
-                  : "text-foreground hover:bg-muted"
-              )}
+      <div className="space-y-2">
+        {subcategories.map((cat) => (
+          <div key={cat.id} className="flex items-center gap-2 px-1">
+            <Checkbox
+              id={`sub-${cat.id}`}
+              checked={selectedSubcategoryIds.includes(cat.id)}
+              onCheckedChange={() => toggle(cat.id)}
+            />
+            <Label
+              htmlFor={`sub-${cat.id}`}
+              className="text-sm cursor-pointer flex-1"
             >
-              <Folder className="h-4 w-4 shrink-0" />
               {cat.name}
-            </Link>
-            {children.length > 0 && (
-              <div className="ml-6 space-y-0.5 mt-0.5">
-                {children.map((child) => (
-                  <Link
-                    key={child.id}
-                    to={`/category/${child.slug}`}
-                    className={cn(
-                      "block px-3 py-1.5 rounded-md text-sm transition-colors",
-                      slug === child.slug
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    )}
-                  >
-                    {child.name}
-                  </Link>
-                ))}
-              </div>
-            )}
+            </Label>
           </div>
-        );
-      })}
+        ))}
+      </div>
+      {selectedSubcategoryIds.length > 0 && (
+        <button
+          onClick={() => onSelectionChange([])}
+          className="text-xs text-primary hover:underline mt-2 px-1"
+        >
+          সব ক্লিয়ার করুন
+        </button>
+      )}
     </nav>
   );
 }

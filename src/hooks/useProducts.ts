@@ -6,12 +6,16 @@ export type Product = Tables<"products"> & {
   categories: { name: string; slug: string; icon: string | null } | null;
 };
 
-export function useProducts(filters?: { category_id?: string; search?: string; featured?: boolean; limit?: number }) {
+export function useProducts(filters?: { category_id?: string; category_ids?: string[]; search?: string; featured?: boolean; limit?: number }) {
   return useQuery({
     queryKey: ["products", filters],
     queryFn: async () => {
       let query = supabase.from("products").select("*, categories(name, slug, icon)").eq("status", "published");
-      if (filters?.category_id) query = query.eq("category_id", filters.category_id);
+      if (filters?.category_ids && filters.category_ids.length > 0) {
+        query = query.in("category_id", filters.category_ids);
+      } else if (filters?.category_id) {
+        query = query.eq("category_id", filters.category_id);
+      }
       if (filters?.search) query = query.ilike("title", `%${filters.search}%`);
       if (filters?.featured) query = query.eq("is_featured", true);
       if (filters?.limit) query = query.limit(filters.limit);
