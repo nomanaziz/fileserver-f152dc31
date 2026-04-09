@@ -91,11 +91,38 @@ export default function Footer() {
           )}
 
           {(!menuItems || menuItems.length === 0) && (
-            <div className="col-span-2">
-              <p className="text-xs text-muted-foreground">
-                Admin Panel → Menu Items থেকে footer লিংক যোগ করুন।
-              </p>
-            </div>
+            <>
+              <div>
+                <h4 className="font-semibold text-xs mb-3 text-foreground uppercase tracking-wider">কুইক লিংক</h4>
+                <ul className="space-y-2 text-xs text-muted-foreground">
+                  {[
+                    { label: "হোম", url: "/" },
+                    { label: "ক্যাটাগরি", url: "/categories" },
+                    { label: "প্রাইসিং", url: "/pricing" },
+                    { label: "লাইভ টিভি", url: "/live-tv" },
+                    { label: "বিজ্ঞাপন দিন", url: "/advertise" },
+                  ].map(item => (
+                    <li key={item.url}>
+                      <Link to={item.url} className="hover:text-primary transition-colors">{item.label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold text-xs mb-3 text-foreground uppercase tracking-wider">আইনি</h4>
+                <ul className="space-y-2 text-xs text-muted-foreground">
+                  {[
+                    { label: "প্রাইভেসি পলিসি", url: "/page/privacy-policy" },
+                    { label: "শর্তাবলী", url: "/page/terms-of-service" },
+                    { label: "DMCA", url: "/page/dmca" },
+                  ].map(item => (
+                    <li key={item.url}>
+                      <Link to={item.url} className="hover:text-primary transition-colors">{item.label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
           )}
         </div>
 
