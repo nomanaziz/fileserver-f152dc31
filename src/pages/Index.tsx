@@ -10,6 +10,7 @@ import { useFeaturedProducts, useLatestProducts } from "@/hooks/useProducts";
 import { useDevicePlatform, getPlatformLabel, matchesPlatform } from "@/hooks/useDevicePlatform";
 import { useRecommendedProducts } from "@/hooks/useRecommendedProducts";
 import SoftwareRequestForm from "@/components/SoftwareRequestForm";
+import CategoryBanners from "@/components/CategoryBanners";
 
 export default function Index() {
   const [search, setSearch] = useState("");
@@ -22,7 +23,6 @@ export default function Index() {
   const platformLabel = getPlatformLabel(platform);
   const PlatformIcon = platform === "android" || platform === "ios" ? Smartphone : platform === "mac" ? Laptop : Monitor;
 
-  // Sort trending/latest to boost platform-matching products
   const sortByRelevance = (products: typeof featured) => {
     if (!products || platform === "unknown") return products;
     const matched = products.filter((p) => matchesPlatform(p.categories?.slug, platform));
@@ -74,6 +74,9 @@ export default function Index() {
           </form>
         </div>
       </section>
+
+      {/* Category Banners */}
+      <CategoryBanners />
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex gap-8">
