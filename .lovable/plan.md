@@ -1,64 +1,81 @@
 
 
-# Vendor Level/Tier System with Dynamic Commission
+# PayStation Payment Gateway Integration
 
 ## Summary
-Vendor-দের জন্য Bronze/Silver/Gold tier system তৈরি করবো। বেশি বিক্রি = কম কমিশন। নতুন vendor 20%, মাঝারি 15%, টপ seller 10%। Admin চাইলে tier-এর নাম, threshold, commission rate modify করতে পারবে।
+PayStation API integrate করবো — admin panel থেকে শুধু Merchant ID ও Password দিলেই পুরো payment system auto-activate হবে। Customer checkout-এ PayStation hosted checkout page-এ redirect হবে, payment complete হলে callback দিয়ে order confirm হবে।
+
+## PayStation API Flow
+```text
+1. Customer clicks "Pay" → Edge Function creates payment via PayStation API
+2. PayStation returns payment_url → Customer redirected to PayStation checkout
+3. Customer pays (bKash/Nagad/Card etc.) → PayStation sends callback to our edge function
+4. Callback edge function verifies payment → Updates payment status in DB
+5. Vendor earnings trigger fires automatically
+```
+
+## Implementation
+
+### 1. Admin Settings — PayStation Config (site_settings table)
+Add 3 new fields to `AdminSettings.tsx`:
+- `paystation_merchant_id` — Merchant ID from PayStation
+- `paystation_password` — Password from PayStation  
+- `paystation_enabled` — Enable/disable toggle
+
+Admin just fills in Merchant ID + Password → PayStation is active. No code changes needed after that.
+
+### 2. Edge Function: `paystation-initiate` 
+Creates a payment session with PayStation API:
+- Reads `paystation_merchant_id` and `paystation_password` from `site_settings` table (using service role key)
+- Calls `POST https://api.paystation.com.bd/initiate-payment` with:
+  - `merchantId`, `password`, `invoice_number` (payment ID), `payment_amount`, `currency: BDT`
+  - `cust_name`, `cust_phone`, `cust_email` from user profile
+  - `callback_url` pointing to our callback edge function
+  - `opt_a` with payment metadata (product_id, user_id, vendor_id)
+- Returns `payment_url` to frontend
+
+### 3. Edge Function: `paystation-callback`
+Receives payment result from PayStation:
+- URL params: `status`, `invoice_number`, `trx_id`
+- If `status === "Successful"`:
+  - Update `payments` row: `status = 'completed'`, `transaction_id = trx_id`
+  - This triggers existing `handle_vendor_payment()` for vendor commission
+- If failed/canceled: update payment status accordingly
+- Redirect user to `/dashboard?payment=success` or `?payment=failed`
+
+### 4. Edge Function: `paystation-verify` (optional but recommended)
+Calls `POST https://api.paystation.com.bd/transaction-status` to double-check payment status server-side — prevents callback spoofing.
+
+### 5. Update CheckoutPage.tsx
+- Fetch `paystation_enabled` from `site_settings`
+- If enabled: "Pay" button calls `paystation-initiate` edge function → redirects to `payment_url`
+- If disabled: falls back to current manual payment flow
+- Create payment record with `status: 'pending'` before redirect
+
+### 6. Update SubscriptionCheckout.tsx
+- Same PayStation flow for subscription purchases
+- Pass `subscription plan` info in `checkout_items`
+
+### 7. Secret: `SUPABASE_SERVICE_ROLE_KEY`
+Edge functions need service role to read `site_settings` and update `payments`. Will need this secret added.
 
 ## Database Changes
-
-### 1. New table: `vendor_tiers`
-Admin-configurable tier definitions:
-- `id` (uuid, PK)
-- `name` (text) — "Bronze", "Silver", "Gold"
-- `slug` (text) — "bronze", "silver", "gold"
-- `commission_rate` (numeric) — 20, 15, 10
-- `min_sales_count` (integer) — threshold to reach this tier (0, 20, 50)
-- `min_total_earnings` (numeric) — alternative threshold (0, 5000, 20000)
-- `color` (text) — badge color (#CD7F32, #C0C0C0, #FFD700)
-- `sort_order` (integer)
-- `is_active` (boolean, default true)
-- `created_at`, `updated_at`
-
-RLS: Admin can manage. Anyone can view active tiers.
-
-### 2. Alter `vendor_profiles`
-- Add `tier_id uuid references vendor_tiers(id)` — current tier
-- Keep existing `commission_rate` as the effective rate (synced from tier or overridden by admin)
-
-### 3. Insert default tiers
-| Tier | Commission | Min Sales | Min Earnings |
-|------|-----------|-----------|-------------|
-| Bronze | 20% | 0 | ৳0 |
-| Silver | 15% | 20 sales | ৳5,000 |
-| Gold | 10% | 50 sales | ৳20,000 |
-
-### 4. Update `handle_vendor_payment()` trigger
-After updating vendor balance, check if vendor qualifies for a higher tier based on total sales count and earnings. If yes, auto-upgrade tier and update `commission_rate`.
-
-## Frontend Changes
-
-### 5. Admin: Vendor Tiers tab in AdminVendors
-- New "টিয়ার" tab showing all tiers in a table
-- Edit tier: name, commission rate, min_sales_count, min_total_earnings, color
-- Add/delete tiers
-- Per-vendor: show current tier badge, option to manually override tier
-
-### 6. Vendor Dashboard
-- Show current tier badge (Bronze/Silver/Gold) with color
-- Show progress to next tier (e.g., "আরো 12টি বিক্রি করলে Silver হবেন")
-- Commission rate from current tier
-
-### 7. Admin Vendors list
-- Show tier badge next to each vendor
-- Manual tier override dropdown
+No schema changes needed — we use existing `site_settings` for config and existing `payments` table. Just insert PayStation settings via admin UI.
 
 ## Files
 
-**Migration**: New `vendor_tiers` table + `tier_id` on `vendor_profiles` + update trigger + insert default tiers
+**Create:**
+- `supabase/functions/paystation-initiate/index.ts`
+- `supabase/functions/paystation-callback/index.ts`
 
-**Edit**:
-- `src/pages/admin/AdminVendors.tsx` — add Tiers tab, show tier badges, tier override
-- `src/pages/vendor/VendorDashboard.tsx` — show tier badge + progress to next tier
-- `src/hooks/useVendor.ts` — add `useVendorTiers()` hook
+**Edit:**
+- `src/pages/admin/AdminSettings.tsx` — add PayStation config fields
+- `src/pages/CheckoutPage.tsx` — PayStation redirect flow
+- `src/pages/SubscriptionCheckout.tsx` — PayStation redirect flow
+
+## Security
+- Merchant ID & Password stored in `site_settings` (admin-only access)
+- Edge functions use service role to read credentials
+- Callback validates payment via `transaction-status` API before confirming
+- No secrets exposed to frontend
 
