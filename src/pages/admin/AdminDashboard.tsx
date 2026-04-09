@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Package, Users, Download, CreditCard, Star, MessageSquare, Tag } from "lucide-react";
+import { Package, Users, Download, CreditCard, Star, MessageSquare, Tag, ShoppingCart, Heart, AlertTriangle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
@@ -9,7 +9,7 @@ export default function AdminDashboard() {
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [products, profiles, payments, reviews, downloads, requests, pendingReviews, activeSubs, pendingOrders] = await Promise.all([
+      const [products, profiles, payments, reviews, downloads, requests, pendingReviews, activeSubs, pendingOrders, cartItems, favorites, abandonedCheckouts] = await Promise.all([
         supabase.from("products").select("id", { count: "exact", head: true }),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("payments").select("amount"),
@@ -18,6 +18,9 @@ export default function AdminDashboard() {
         supabase.from("software_requests").select("id", { count: "exact", head: true }),
         supabase.from("reviews").select("id", { count: "exact", head: true }).eq("is_approved", false),
         supabase.from("subscriptions").select("id", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("payments").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("cart_items").select("id", { count: "exact", head: true }),
+        supabase.from("favorites").select("id", { count: "exact", head: true }),
         supabase.from("payments").select("id", { count: "exact", head: true }).eq("status", "pending"),
       ]);
       const totalRevenue = payments.data?.reduce((s: number, p: any) => s + Number(p.amount), 0) || 0;
@@ -31,6 +34,9 @@ export default function AdminDashboard() {
         pendingReviews: pendingReviews.count || 0,
         activeSubs: activeSubs.count || 0,
         pendingOrders: pendingOrders.count || 0,
+        cartItems: cartItems.count || 0,
+        favorites: favorites.count || 0,
+        abandonedCheckouts: abandonedCheckouts.count || 0,
       };
     },
   });
@@ -82,6 +88,9 @@ export default function AdminDashboard() {
     { title: "Pending Reviews", value: stats?.pendingReviews || 0, icon: Star, color: "text-orange-500" },
     { title: "Active Subs", value: stats?.activeSubs || 0, icon: Tag, color: "text-cyan-500" },
     { title: "Pending Orders", value: stats?.pendingOrders || 0, icon: MessageSquare, color: "text-pink-500" },
+    { title: "Cart Items", value: stats?.cartItems || 0, icon: ShoppingCart, color: "text-emerald-500" },
+    { title: "Total Favorites", value: stats?.favorites || 0, icon: Heart, color: "text-red-500" },
+    { title: "Abandoned Checkouts", value: stats?.abandonedCheckouts || 0, icon: AlertTriangle, color: "text-amber-500" },
   ];
 
   return (
@@ -102,7 +111,7 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         {secondaryCards.map((c) => (
           <Card key={c.title}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">

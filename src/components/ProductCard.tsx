@@ -1,10 +1,12 @@
-import { Link } from "react-router-dom";
-import { Download, Monitor, Smartphone, Gamepad2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Download, Monitor, Smartphone, Gamepad2, Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import CategoryPlaceholder from "@/components/CategoryPlaceholder";
 import type { Product } from "@/hooks/useProducts";
+import { useAuth } from "@/contexts/AuthContext";
+import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 
 const osIcons: Record<string, any> = {
   windows: Monitor,
@@ -37,7 +39,18 @@ interface ProductCardProps {
 export default function ProductCard({ product, variant = "grid" }: ProductCardProps) {
   const OsIcon = product.os_type ? osIcons[product.os_type] || Monitor : Monitor;
   const catColor = getCatColor(product.categories?.slug);
-  const hasImage = !!(product.thumbnail_url || (product.screenshots && product.screenshots.length > 0));
+  const { user } = useAuth();
+  const { data: favorites } = useFavorites();
+  const toggleFavorite = useToggleFavorite();
+  const navigate = useNavigate();
+  const isFavorited = favorites?.some((f) => f.product_id === product.id) || false;
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) { navigate("/login"); return; }
+    toggleFavorite.mutate(product.id);
+  };
 
   if (variant === "list") {
     return (
@@ -117,6 +130,14 @@ export default function ProductCard({ product, variant = "grid" }: ProductCardPr
           ) : (
             <CategoryPlaceholder categorySlug={product.categories?.slug} className="w-full h-full" iconSize="lg" />
           )}
+
+          <button
+            onClick={handleFavoriteClick}
+            className="absolute top-2 left-2 p-1.5 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background transition-colors"
+            aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+          >
+            <Heart className={`h-4 w-4 ${isFavorited ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
+          </button>
 
           <div className="absolute top-2 right-2">
             {product.is_paid ? (
