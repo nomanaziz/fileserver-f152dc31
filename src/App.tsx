@@ -22,6 +22,8 @@ import StaticPage from "./pages/StaticPage";
 import Dashboard from "./pages/Dashboard";
 import Pricing from "./pages/Pricing";
 import LiveTV from "./pages/LiveTV";
+import CheckoutPage from "./pages/CheckoutPage";
+import SubscriptionCheckout from "./pages/SubscriptionCheckout";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -73,6 +75,8 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/live-tv" element={<LiveTV />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/checkout/subscription" element={<SubscriptionCheckout />} />
 
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />

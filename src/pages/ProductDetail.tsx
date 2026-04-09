@@ -3,15 +3,18 @@ import { useProductBySlug } from "@/hooks/useProducts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToggleFavorite } from "@/hooks/useFavorites";
 import { useCartMutations } from "@/hooks/useCart";
+import { useHasPurchased } from "@/hooks/usePurchases";
+import { useCanDownloadWithSubscription } from "@/hooks/useSubscription";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Heart, ShoppingCart, ArrowLeft, Monitor, HardDrive, Calendar } from "lucide-react";
+import { Download, Heart, ShoppingCart, ArrowLeft, Monitor, HardDrive, Calendar, Lock, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
 
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -19,6 +22,10 @@ export default function ProductDetail() {
   const { user } = useAuth();
   const toggleFav = useToggleFavorite();
   const { addToCart } = useCartMutations();
+  const navigate = useNavigate();
+
+  const { data: hasPurchased } = useHasPurchased(product?.id);
+  const { hasSubscription, canDownload, reason } = useCanDownloadWithSubscription();
 
   const { data: downloads } = useQuery({
     queryKey: ["product-downloads", product?.id],
@@ -54,6 +61,9 @@ export default function ProductDetail() {
       </Layout>
     );
   }
+
+  const isFree = !product.is_paid;
+  const canAccess = isFree || hasPurchased || (hasSubscription && canDownload);
 
   return (
     <Layout>
@@ -149,7 +159,7 @@ export default function ProductDetail() {
                       >
                         <Heart className="h-4 w-4" />
                       </Button>
-                      {product.is_paid && (
+                      {product.is_paid && !hasPurchased && (
                         <Button
                           variant="outline"
                           onClick={() => {
@@ -166,8 +176,49 @@ export default function ProductDetail() {
               </CardContent>
             </Card>
 
-            {/* Download links */}
-            {downloads && downloads.length > 0 && (
+            {/* Purchase Required Section */}
+            {product.is_paid && !canAccess && (
+              <Card className="border-amber-500/30 bg-amber-500/5">
+                <CardContent className="p-5 space-y-3">
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                    <Lock className="h-5 w-5" />
+                    <h3 className="font-semibold">পারচেজ প্রয়োজন</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    ডাউনলোড করতে হলে এই সফটওয়্যারটি কিনতে হবে অথবা সাবস্ক্রিপশন নিতে হবে।
+                  </p>
+                  {hasSubscription && !canDownload && (
+                    <p className="text-xs text-destructive">{reason}</p>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    {!user ? (
+                      <Button onClick={() => navigate("/login")} className="w-full">
+                        লগইন করুন
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          onClick={() => {
+                            addToCart.mutate(product.id);
+                            toast.success("কার্টে যোগ হয়েছে!");
+                            navigate("/checkout");
+                          }}
+                          className="w-full"
+                        >
+                          <ShoppingCart className="h-4 w-4 mr-2" /> কিনুন — ৳{product.price}
+                        </Button>
+                        <Button variant="outline" onClick={() => navigate("/pricing")} className="w-full">
+                          <Crown className="h-4 w-4 mr-2" /> সাবস্ক্রাইব করুন
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Download links — only show if accessible */}
+            {canAccess && downloads && downloads.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">ডাউনলোড লিংক</CardTitle>
