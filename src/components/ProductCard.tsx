@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import { Download, Monitor, Smartphone, Gamepad2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import CategoryPlaceholder from "@/components/CategoryPlaceholder";
 import type { Product } from "@/hooks/useProducts";
 
 const osIcons: Record<string, any> = {
@@ -35,6 +37,7 @@ interface ProductCardProps {
 export default function ProductCard({ product, variant = "grid" }: ProductCardProps) {
   const OsIcon = product.os_type ? osIcons[product.os_type] || Monitor : Monitor;
   const catColor = getCatColor(product.categories?.slug);
+  const hasImage = !!(product.thumbnail_url || (product.screenshots && product.screenshots.length > 0));
 
   if (variant === "list") {
     return (
@@ -45,9 +48,7 @@ export default function ProductCard({ product, variant = "grid" }: ProductCardPr
           ) : product.screenshots && product.screenshots.length > 0 ? (
             <img src={product.screenshots[0]} alt={product.title} className="w-full h-full object-cover" loading="lazy" />
           ) : (
-            <div className="flex items-center justify-center h-full">
-              <OsIcon className="h-5 w-5 text-muted-foreground/30" />
-            </div>
+            <CategoryPlaceholder categorySlug={product.categories?.slug} className="w-full h-full" iconSize="sm" />
           )}
         </div>
 
@@ -78,12 +79,16 @@ export default function ProductCard({ product, variant = "grid" }: ProductCardPr
           </div>
         </div>
 
-        <div className="shrink-0">
+        <div className="shrink-0 flex items-center gap-2">
           {product.is_paid ? (
             <Badge className="bg-primary text-primary-foreground border-0 text-xs">৳{product.price}</Badge>
           ) : (
             <Badge variant="secondary" className="text-xs">Free</Badge>
           )}
+          <Button size="sm" variant="outline" className="h-7 px-2.5 text-[11px] gap-1" onClick={(e) => e.stopPropagation()}>
+            <Download className="h-3 w-3" />
+            Download
+          </Button>
         </div>
       </Link>
     );
@@ -110,9 +115,7 @@ export default function ProductCard({ product, variant = "grid" }: ProductCardPr
               loading="lazy"
             />
           ) : (
-            <div className="flex items-center justify-center h-full">
-              <OsIcon className="h-8 w-8 text-muted-foreground/20" />
-            </div>
+            <CategoryPlaceholder categorySlug={product.categories?.slug} className="w-full h-full" iconSize="lg" />
           )}
 
           <div className="absolute top-2 right-2">
@@ -144,11 +147,21 @@ export default function ProductCard({ product, variant = "grid" }: ProductCardPr
               )}
               {product.version && <span className="text-[10px]">v{product.version}</span>}
             </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Download className="h-3 w-3" />
-              <span>{product.download_count}</span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Download className="h-3 w-3" />
+                <span>{product.download_count}</span>
+              </div>
             </div>
           </div>
+          <Button
+            size="sm"
+            className="w-full mt-2.5 h-8 text-xs gap-1.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Download className="h-3.5 w-3.5" />
+            ডাউনলোড করুন
+          </Button>
         </CardContent>
       </Card>
     </Link>
