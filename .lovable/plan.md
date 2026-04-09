@@ -1,58 +1,43 @@
 
 
-# Software Request: Login Required + Admin Notify & Fulfill System
+# Product Card উন্নতি + Category Default Image + Hero Banners
 
 ## Summary
-Software request form-এ login বাধ্যতামূলক করবো — না থাকলে login page-এ redirect। Admin fulfill করলে requester-দের notify করতে পারবে (paid/free হিসেবে) এবং product link auto-attach হবে।
+তিনটি কাজ: (1) প্রতিটি product card-এ Download বাটন যোগ, (2) প্রতিটি category-র জন্য SVG default placeholder image তৈরি — product-এ image না থাকলে category-র icon/color দিয়ে সুন্দর placeholder দেখাবে, (3) Hero section-এর নিচে colorful category banners।
 
-## Database Changes
+## Implementation
 
-### 1. Alter `software_requests` table
-- Add `fulfilled_product_id uuid` — linked product when fulfilled
-- Add `is_notified boolean default false` — whether user was notified
+### 1. Category Default Placeholder Images
+`src/components/CategoryPlaceholder.tsx` — নতুন component তৈরি করবো যা category slug অনুযায়ী colorful gradient background + category icon (Monitor, Smartphone, Gamepad2, Film, BookOpen, Palette, Code) দিয়ে সুন্দর placeholder render করবে। এটা product card-এ image না থাকলে ব্যবহার হবে।
 
-### 2. New table: `software_request_subscribers`
-Multiple users can subscribe/vote for the same software request:
-- `id` (uuid, PK)
-- `request_id` (uuid) — references software_requests
-- `user_id` (uuid)
-- `created_at`
-- Unique constraint on (request_id, user_id)
-- RLS: users can manage own subscriptions, admins can view all
+প্রতিটি category-র জন্য unique gradient + icon:
+- **Software**: Blue gradient + Monitor icon
+- **Android**: Green gradient + Smartphone icon
+- **Games**: Purple gradient + Gamepad2 icon
+- **Movies**: Red gradient + Film icon
+- **Tutorials**: Yellow/amber gradient + BookOpen icon
+- **Graphics**: Pink gradient + Palette icon
+- **Source Code**: Cyan gradient + Code icon
 
-## Frontend Changes
+### 2. ProductCard.tsx — Download বাটন + Default Image
+- Image না থাকলে `CategoryPlaceholder` component ব্যবহার করবে (বর্তমানের ছোট icon-এর বদলে সুন্দর gradient placeholder)
+- Grid variant: Card-এর নিচে (category badge-এর পাশে) একটি ছোট "Download" বাটন যোগ
+- List variant: ডানদিকে Download বাটন যোগ
+- বাটন click করলে `/product/{slug}` page-এ যাবে (download link product detail page-এ থাকে)
 
-### 3. SoftwareRequestForm.tsx
-- If `!user`: show "লগইন করুন" message/button instead of the form
-- Hide form inputs entirely for non-logged-in users
-- Add a "Subscribe" / "আমিও চাই" button on each recent request so logged-in users can subscribe to get notified
-- Show subscriber count next to each request
-
-### 4. AdminRequests.tsx — Enhanced fulfill flow
-- When admin clicks "Convert" and fulfills:
-  - Link the product to the request via `fulfilled_product_id`
-  - New "Notify" button appears for fulfilled requests
-  - Notify action: inserts a notification/toast for all subscribers of that request
-  - Admin can mark as "paid" or "free" — this info goes in the notification
-- Show subscriber count per request
-
-### 5. Notification delivery
-Since we don't have push notifications or email set up, use an in-app approach:
-- New table `notifications` (id, user_id, title, message, link, is_read, created_at)
-- RLS: users can view/update own notifications
-- When admin clicks "Notify", insert a notification row for each subscriber with the product link
-- Add a bell icon in the Header showing unread notification count
-- Dropdown showing recent notifications with links
+### 3. Index.tsx — Hero-র নিচে Colorful Category Banners
+Hero section-এর ঠিক নিচে, main content-এর আগে একটি horizontally scrollable banner strip যোগ করবো:
+- প্রতিটি category-র জন্য একটি colorful card/banner (category color gradient background)
+- Category icon + name সহ
+- Click করলে `/category/{slug}` page-এ যাবে
+- Mobile-এ horizontal scroll, desktop-এ grid/flex layout
 
 ## Files
 
-**Migration**: Add `fulfilled_product_id` and `is_notified` to `software_requests`, create `software_request_subscribers` table, create `notifications` table
+**Create:**
+- `src/components/CategoryPlaceholder.tsx` — gradient + icon placeholder component
 
-**Create**:
-- `src/components/NotificationBell.tsx` — bell icon + dropdown in header
-
-**Edit**:
-- `src/components/SoftwareRequestForm.tsx` — login gate, subscribe button
-- `src/pages/admin/AdminRequests.tsx` — link product, notify subscribers, show counts
-- `src/components/layout/Header.tsx` — add NotificationBell
+**Edit:**
+- `src/components/ProductCard.tsx` — use CategoryPlaceholder for missing images, add Download button
+- `src/pages/Index.tsx` — add colorful category banners after hero section
 
