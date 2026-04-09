@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 
 export default function SubscriptionCheckout() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const planId = searchParams.get("plan");
@@ -44,6 +44,18 @@ export default function SubscriptionCheckout() {
     },
   });
 
+  const { data: paystationEnabled } = useQuery({
+    queryKey: ["paystation-enabled"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "paystation_enabled")
+        .maybeSingle();
+      return data?.value === "true";
+    },
+  });
+
   if (!user) { navigate("/login"); return null; }
   if (!planId) { navigate("/pricing"); return null; }
 
@@ -54,14 +66,53 @@ export default function SubscriptionCheckout() {
     return `${days} Days`;
   };
 
-  const handleCheckout = async () => {
+  const handlePayStation = async () => {
     if (!plan) return;
     setProcessing(true);
     try {
-      // Create subscription
+      const { data: payment, error: payErr } = await supabase
+        .from("payments")
+        .insert({
+          user_id: user.id,
+          amount: plan.price,
+          status: "pending",
+          payment_method: "paystation",
+        })
+        .select("id")
+        .single();
+      if (payErr) throw payErr;
+
+      const { data, error } = await supabase.functions.invoke("paystation-initiate", {
+        body: {
+          payment_id: payment.id,
+          amount: plan.price,
+          cust_name: profile?.display_name || user.email,
+          cust_email: user.email,
+          cust_phone: profile?.phone || "",
+          subscription_plan_id: plan.id,
+          redirect_url: window.location.origin + "/dashboard",
+        },
+      });
+
+      if (error) throw error;
+      if (data?.payment_url) {
+        window.location.href = data.payment_url;
+      } else {
+        throw new Error("Payment URL not received");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "পেমেন্ট শুরু করা যায়নি");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleManualCheckout = async () => {
+    if (!plan) return;
+    setProcessing(true);
+    try {
       const endsAt = new Date();
       endsAt.setDate(endsAt.getDate() + plan.duration_days);
-
       const { error: subError } = await supabase.from("subscriptions").insert({
         user_id: user.id,
         plan_id: plan.id,
@@ -70,8 +121,6 @@ export default function SubscriptionCheckout() {
         status: "active",
       });
       if (subError) throw subError;
-
-      // Create payment record
       const { error: payError } = await supabase.from("payments").insert({
         user_id: user.id,
         amount: plan.price,
@@ -79,7 +128,6 @@ export default function SubscriptionCheckout() {
         payment_method: "manual",
       });
       if (payError) throw payError;
-
       toast.success("সাবস্ক্রিপশন সফল হয়েছে!");
       navigate("/dashboard");
     } catch (e: any) {
@@ -138,16 +186,23 @@ export default function SubscriptionCheckout() {
             </Card>
           ) : null}
 
-          <Button className="w-full h-11" onClick={handleCheckout} disabled={processing || !plan}>
-            {processing ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                প্রসেসিং...
-              </>
-            ) : (
-              `পে করুন — ৳${plan?.price || 0}`
-            )}
-          </Button>
+          {paystationEnabled ? (
+            <Button className="w-full h-11" onClick={handlePayStation} disabled={processing || !plan}>
+              {processing ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> প্রসেসিং...</>
+              ) : (
+                `PayStation দিয়ে পে করুন — ৳${plan?.price || 0}`
+              )}
+            </Button>
+          ) : (
+            <Button className="w-full h-11" onClick={handleManualCheckout} disabled={processing || !plan}>
+              {processing ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> প্রসেসিং...</>
+              ) : (
+                `পে করুন — ৳${plan?.price || 0}`
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </Layout>
