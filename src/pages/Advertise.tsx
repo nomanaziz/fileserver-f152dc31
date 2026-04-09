@@ -44,10 +44,6 @@ export default function Advertise() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-
-  if (!authLoading && !user) {
-    return <Navigate to="/login" replace />;
-  }
   const { data: slots } = useAdSlotAvailability();
 
   const { data: paymentMethods } = useQuery({
