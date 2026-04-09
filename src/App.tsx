@@ -88,6 +88,7 @@ const App = () => (
             <Route path="/store/:id" element={<VendorStore />} />
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/cart" element={<CartPage />} />
+            <Route path="/advertise" element={<Advertise />} />
 
             <Route path="/vendor" element={<VendorLayout />}>
               <Route index element={<VendorDashboard />} />
