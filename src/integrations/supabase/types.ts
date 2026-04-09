@@ -1211,6 +1211,7 @@ export type Database = {
           logo_url: string | null
           store_description: string | null
           store_name: string
+          tier_id: string | null
           total_earnings: number
           updated_at: string
         }
@@ -1224,6 +1225,7 @@ export type Database = {
           logo_url?: string | null
           store_description?: string | null
           store_name: string
+          tier_id?: string | null
           total_earnings?: number
           updated_at?: string
         }
@@ -1237,7 +1239,58 @@ export type Database = {
           logo_url?: string | null
           store_description?: string | null
           store_name?: string
+          tier_id?: string | null
           total_earnings?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_profiles_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_tiers: {
+        Row: {
+          color: string
+          commission_rate: number
+          created_at: string
+          id: string
+          is_active: boolean
+          min_sales_count: number
+          min_total_earnings: number
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          commission_rate?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          min_sales_count?: number
+          min_total_earnings?: number
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          commission_rate?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          min_sales_count?: number
+          min_total_earnings?: number
+          name?: string
+          slug?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
