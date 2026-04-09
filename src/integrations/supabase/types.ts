@@ -620,6 +620,7 @@ export type Database = {
           amount: number
           created_at: string
           currency: string
+          gateway_response: Json | null
           id: string
           payment_method: string | null
           product_id: string | null
@@ -632,6 +633,7 @@ export type Database = {
           amount: number
           created_at?: string
           currency?: string
+          gateway_response?: Json | null
           id?: string
           payment_method?: string | null
           product_id?: string | null
@@ -644,6 +646,7 @@ export type Database = {
           amount?: number
           created_at?: string
           currency?: string
+          gateway_response?: Json | null
           id?: string
           payment_method?: string | null
           product_id?: string | null
@@ -1047,6 +1050,7 @@ export type Database = {
           is_active: boolean
           plan_id: string
           starts_at: string
+          status: string
           user_id: string
         }
         Insert: {
@@ -1056,6 +1060,7 @@ export type Database = {
           is_active?: boolean
           plan_id: string
           starts_at?: string
+          status?: string
           user_id: string
         }
         Update: {
@@ -1065,6 +1070,7 @@ export type Database = {
           is_active?: boolean
           plan_id?: string
           starts_at?: string
+          status?: string
           user_id?: string
         }
         Relationships: [
