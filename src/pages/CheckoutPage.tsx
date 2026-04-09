@@ -43,12 +43,14 @@ export default function CheckoutPage() {
     try {
       // Create payment records for each cart item
       for (const item of cartItems) {
+        const product = item.products as any;
         const { error } = await supabase.from("payments").insert({
           user_id: user.id,
           product_id: item.product_id,
-          amount: item.products?.price || 0,
+          amount: product?.price || 0,
           status: "completed",
           payment_method: "manual",
+          vendor_id: product?.vendor_id || null,
         });
         if (error) throw error;
       }
