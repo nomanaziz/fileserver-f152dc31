@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, Loader2, Copy, Check, Smartphone } from "lucide-react";
+import { CreditCard, Loader2, Copy, Check, Smartphone, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/hooks/useCart";
@@ -239,68 +240,112 @@ export default function CheckoutPage() {
             )}
           </div>
 
-          {/* Manual Payment Methods */}
+          {/* Manual Payment Methods — Radio-style collapsed/expanded */}
           {methodsLoading ? (
             <Skeleton className="h-32 w-full" />
           ) : paymentMethods && paymentMethods.length > 0 ? (
             <Card>
               <CardContent className="p-5">
-                <h3 className="font-semibold mb-3 text-sm">ম্যানুয়াল পেমেন্ট মেথড</h3>
-                <div className="space-y-3">
-                  {paymentMethods.map((pm) => (
-                    <div
-                      key={pm.id}
-                      onClick={() => setSelectedMethod(pm.slug)}
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        selectedMethod === pm.slug
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        {pm.logo_url ? (
-                          <img src={pm.logo_url} alt={pm.name} className="h-8 w-8 rounded object-contain" />
-                        ) : (
-                          <div className="h-8 w-8 rounded flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: pm.color || "#E2136E" }}>
-                            {pm.name.charAt(0)}
+                <h3 className="font-semibold mb-4 text-sm">পেমেন্ট মেথড সিলেক্ট করুন</h3>
+                <RadioGroup
+                  value={selectedMethod || ""}
+                  onValueChange={(val) => setSelectedMethod(val)}
+                  className="space-y-2"
+                >
+                  {paymentMethods.map((pm) => {
+                    const isSelected = selectedMethod === pm.slug;
+                    return (
+                      <div
+                        key={pm.id}
+                        className={`rounded-lg border-2 transition-all ${
+                          isSelected
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/30"
+                        }`}
+                      >
+                        {/* Header — always visible */}
+                        <label
+                          htmlFor={`pm-${pm.id}`}
+                          className="flex items-center gap-3 p-3 cursor-pointer"
+                        >
+                          <RadioGroupItem value={pm.slug} id={`pm-${pm.id}`} />
+                          {pm.logo_url ? (
+                            <img src={pm.logo_url} alt={pm.name} className="h-7 w-7 rounded object-contain" />
+                          ) : (
+                            <div
+                              className="h-7 w-7 rounded flex items-center justify-center text-white text-xs font-bold shrink-0"
+                              style={{ backgroundColor: pm.color || "#E2136E" }}
+                            >
+                              {pm.name.charAt(0)}
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{pm.name}</p>
+                            {pm.account_type && (
+                              <p className="text-xs text-muted-foreground">{pm.account_type}</p>
+                            )}
+                          </div>
+                          <ChevronDown
+                            className={`h-4 w-4 text-muted-foreground transition-transform ${
+                              isSelected ? "rotate-180" : ""
+                            }`}
+                          />
+                        </label>
+
+                        {/* Expanded details — only when selected */}
+                        {isSelected && (
+                          <div className="px-4 pb-4 pt-1 space-y-3 border-t border-border/50">
+                            {pm.account_number && (
+                              <div className="flex items-center gap-2 bg-muted rounded-md px-3 py-2">
+                                <span className="text-sm font-mono flex-1">{pm.account_number}</span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2"
+                                  onClick={() => copyToClipboard(pm.account_number!, pm.id)}
+                                >
+                                  {copiedId === pm.id ? (
+                                    <Check className="h-3.5 w-3.5 text-green-500" />
+                                  ) : (
+                                    <Copy className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
+                              </div>
+                            )}
+                            {pm.bank_name && (
+                              <p className="text-xs text-muted-foreground">
+                                ব্যাংক: {pm.bank_name}
+                                {pm.branch_name && ` — ${pm.branch_name}`}
+                              </p>
+                            )}
+                            {pm.routing_number && (
+                              <p className="text-xs text-muted-foreground">
+                                রাউটিং নম্বর: {pm.routing_number}
+                              </p>
+                            )}
+                            {pm.instructions && (
+                              <p className="text-xs text-muted-foreground bg-muted/50 rounded p-2">
+                                {pm.instructions}
+                              </p>
+                            )}
+
+                            <Button
+                              className="w-full h-10 mt-2"
+                              onClick={handleManualCheckout}
+                              disabled={processing || !cartItems?.length}
+                            >
+                              {processing ? (
+                                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> প্রসেসিং...</>
+                              ) : (
+                                `পেমেন্ট করেছি — কনফার্ম করুন (৳${total})`
+                              )}
+                            </Button>
                           </div>
                         )}
-                        <div>
-                          <p className="font-semibold text-sm">{pm.name}</p>
-                          {pm.account_type && <p className="text-xs text-muted-foreground">{pm.account_type}</p>}
-                        </div>
                       </div>
-                      {pm.account_number && (
-                        <div className="flex items-center gap-2 bg-muted rounded-md px-3 py-2 mt-2">
-                          <span className="text-sm font-mono flex-1">{pm.account_number}</span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2"
-                            onClick={(e) => { e.stopPropagation(); copyToClipboard(pm.account_number!, pm.id); }}
-                          >
-                            {copiedId === pm.id ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                          </Button>
-                        </div>
-                      )}
-                      {pm.instructions && (
-                        <p className="text-xs text-muted-foreground mt-2">{pm.instructions}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  className="w-full h-11 mt-4"
-                  variant="outline"
-                  onClick={handleManualCheckout}
-                  disabled={processing || !cartItems?.length || !selectedMethod}
-                >
-                  {processing ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> প্রসেসিং...</>
-                  ) : (
-                    "পেমেন্ট করেছি — কনফার্ম করুন"
-                  )}
-                </Button>
+                    );
+                  })}
+                </RadioGroup>
               </CardContent>
             </Card>
           ) : !bkashEnabled && !paystationEnabled ? (
