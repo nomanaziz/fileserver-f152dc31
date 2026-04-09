@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Search, TrendingUp, Clock, Sparkles, ArrowRight, Download, Flame, Monitor, Smartphone, Laptop } from "lucide-react";
+import { Search, TrendingUp, Clock, Sparkles, ArrowRight, Download, Flame, Monitor, Smartphone, Laptop, File, Folder, Gamepad2, Film, Music, Code, Image, HardDrive, Wifi, Globe, Shield, Zap, Cloud, Database, Terminal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
