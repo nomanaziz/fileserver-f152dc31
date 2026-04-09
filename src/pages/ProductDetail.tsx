@@ -127,6 +127,17 @@ export default function ProductDetail() {
                 <CardTitle className="text-xl">{product.title}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {vendorInfo && (
+                  <Link to={`/store/${vendorInfo.id}`} className="flex items-center gap-2 p-2 rounded-md bg-muted hover:bg-muted/80 transition-colors">
+                    {vendorInfo.logo_url ? (
+                      <img src={vendorInfo.logo_url} alt={vendorInfo.store_name} className="h-6 w-6 rounded-full object-cover" />
+                    ) : (
+                      <Store className="h-5 w-5 text-primary" />
+                    )}
+                    <span className="text-sm font-medium">{vendorInfo.store_name}</span>
+                    {vendorInfo.is_verified && <Badge variant="outline" className="text-xs ml-auto">✓</Badge>}
+                  </Link>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {product.categories && (
                     <Badge variant="outline">{product.categories.name}</Badge>
