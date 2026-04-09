@@ -2,6 +2,20 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+export function useVendorTiers() {
+  return useQuery({
+    queryKey: ["vendor-tiers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vendor_tiers")
+        .select("*")
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 export function useVendorProfile() {
   const { user } = useAuth();
   return useQuery({
