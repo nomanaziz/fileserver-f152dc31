@@ -6,19 +6,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useActiveSubscription, useTodayDownloadCount } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Download, Heart, User, ShoppingBag, FileText } from "lucide-react";
+import { Download, Heart, User, ShoppingBag, Crown } from "lucide-react";
 
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
   const { data: favorites } = useFavorites();
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [phone, setPhone] = useState(profile?.phone || "");
+
+  const { data: activeSub } = useActiveSubscription();
+  const { data: todayCount } = useTodayDownloadCount();
 
   const { data: downloadHistory } = useQuery({
     queryKey: ["download-history", user?.id],
@@ -60,6 +66,8 @@ export default function Dashboard() {
     else toast.success("প্রোফাইল আপডেট হয়েছে!");
   };
 
+  const subPlan = activeSub?.subscription_plans as any;
+
   return (
     <Layout>
       <div className="container py-8">
@@ -67,6 +75,7 @@ export default function Dashboard() {
         <Tabs defaultValue="profile">
           <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="profile"><User className="h-4 w-4 mr-1" /> প্রোফাইল</TabsTrigger>
+            <TabsTrigger value="subscription"><Crown className="h-4 w-4 mr-1" /> সাবস্ক্রিপশন</TabsTrigger>
             <TabsTrigger value="favorites"><Heart className="h-4 w-4 mr-1" /> ফেভারিট</TabsTrigger>
             <TabsTrigger value="downloads"><Download className="h-4 w-4 mr-1" /> ডাউনলোড</TabsTrigger>
             <TabsTrigger value="purchases"><ShoppingBag className="h-4 w-4 mr-1" /> পারচেজ</TabsTrigger>
@@ -91,6 +100,50 @@ export default function Dashboard() {
                 <Button onClick={updateProfile}>সেভ করুন</Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="subscription">
+            {activeSub && subPlan ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Crown className="h-5 w-5 text-primary" /> {subPlan.name} প্ল্যান
+                    <Badge variant="secondary" className="ml-auto">সক্রিয়</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">আজকের ডাউনলোড</p>
+                      <div className="flex items-center gap-2">
+                        <Progress value={((todayCount || 0) / (subPlan.daily_download_limit || 1)) * 100} className="flex-1" />
+                        <span className="text-sm font-medium">{todayCount || 0}/{subPlan.daily_download_limit}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">মেয়াদ</p>
+                      <p className="text-sm font-medium">
+                        {new Date(activeSub.starts_at).toLocaleDateString("bn-BD")} — {new Date(activeSub.ends_at).toLocaleDateString("bn-BD")}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    মোট ডাউনলোড লিমিট: {subPlan.total_download_limit}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center space-y-4">
+                  <Crown className="h-12 w-12 mx-auto text-muted-foreground" />
+                  <h3 className="font-semibold">কোনো সক্রিয় সাবস্ক্রিপশন নেই</h3>
+                  <p className="text-sm text-muted-foreground">সাবস্ক্রাইব করলে সব paid সফটওয়্যার ডাউনলোড করতে পারবেন।</p>
+                  <Button asChild>
+                    <Link to="/pricing">প্ল্যান দেখুন</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="favorites">
@@ -135,7 +188,11 @@ export default function Dashboard() {
                       <span className="text-sm">{p.products?.title || "Subscription"}</span>
                       <div className="text-right">
                         <span className="text-sm font-medium">৳{p.amount}</span>
-                        <p className="text-xs text-muted-foreground">{p.status}</p>
+                        <p className="text-xs text-muted-foreground">
+                          <Badge variant={p.status === "completed" ? "default" : "secondary"} className="text-xs">
+                            {p.status}
+                          </Badge>
+                        </p>
                       </div>
                     </div>
                   ))}
