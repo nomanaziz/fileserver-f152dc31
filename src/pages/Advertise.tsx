@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Monitor, LayoutGrid, FileText, Download, Check, Users, Eye, TrendingUp } from "lucide-react";
+import { Monitor, LayoutGrid, FileText, Download, Check, Users, Eye, TrendingUp, Globe } from "lucide-react";
 
 const placements = [
   {
@@ -42,6 +44,14 @@ const placements = [
     icon: Download,
     description: "ডাউনলোড বাটনের ঠিক আগে। সর্বোচ্চ ক্লিক রেট।",
   },
+  {
+    id: "google-ads",
+    name: "Google Ads",
+    size: "কাস্টম",
+    price: 0,
+    icon: Globe,
+    description: "Google Ads ক্যাম্পেইন সেটআপ ও ম্যানেজমেন্ট। মূল্য আলোচনা সাপেক্ষে।",
+  },
 ];
 
 const stats = [
@@ -51,15 +61,34 @@ const stats = [
 ];
 
 export default function Advertise() {
-  const [selected, setSelected] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [selectedPlacements, setSelectedPlacements] = useState<string[]>([]);
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  // Pre-select from URL query param
+  useEffect(() => {
+    const p = searchParams.get("placement");
+    if (p && placements.some((pl) => pl.id === p)) {
+      setSelectedPlacements((prev) => (prev.includes(p) ? prev : [p]));
+    }
+  }, [searchParams]);
+
+  const togglePlacement = (id: string) => {
+    setSelectedPlacements((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    );
+  };
+
+  const selectedDetails = placements.filter((p) => selectedPlacements.includes(p.id));
+  const totalPrice = selectedDetails.reduce((sum, p) => sum + p.price, 0);
+  const hasGoogleAds = selectedPlacements.includes("google-ads");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selected) {
-      toast.error("একটি বিজ্ঞাপনের স্থান নির্বাচন করুন।");
+    if (selectedPlacements.length === 0) {
+      toast.error("অন্তত একটি বিজ্ঞাপনের স্থান নির্বাচন করুন।");
       return;
     }
     setLoading(true);
@@ -67,7 +96,7 @@ export default function Advertise() {
       name: form.name,
       email: form.email,
       phone: form.phone || null,
-      placement: selected,
+      placement: selectedPlacements.join(","),
       message: form.message || null,
     } as any);
     setLoading(false);
@@ -107,12 +136,12 @@ export default function Advertise() {
         <h2 className="text-xl font-semibold mb-4">বিজ্ঞাপনের স্থান ও মূল্য</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
           {placements.map((p) => {
-            const isSelected = selected === p.id;
+            const isSelected = selectedPlacements.includes(p.id);
             return (
               <Card
                 key={p.id}
                 className={`cursor-pointer transition-all ${isSelected ? "ring-2 ring-primary border-primary" : "hover:border-primary/50"}`}
-                onClick={() => setSelected(p.id)}
+                onClick={() => togglePlacement(p.id)}
               >
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-4">
@@ -127,7 +156,11 @@ export default function Advertise() {
                       <p className="text-sm text-muted-foreground mb-2">{p.description}</p>
                       <div className="flex items-center gap-3 text-sm">
                         <span className="bg-muted px-2 py-0.5 rounded text-xs font-mono">{p.size}</span>
-                        <span className="font-semibold text-primary">৳{p.price.toLocaleString("bn-BD")}/মাস</span>
+                        {p.price > 0 ? (
+                          <span className="font-semibold text-primary">৳{p.price.toLocaleString("bn-BD")}/মাস</span>
+                        ) : (
+                          <span className="font-semibold text-primary">আলোচনা সাপেক্ষে</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -152,11 +185,43 @@ export default function Advertise() {
               <CardTitle>অর্ডার করুন</CardTitle>
             </CardHeader>
             <CardContent>
-              {selected && (
+              {/* Placement Checkbox Selection */}
+              <div className="mb-6">
+                <Label className="text-base font-semibold mb-3 block">আপনার কাঙ্ক্ষিত বিজ্ঞাপন নির্বাচন করুন *</Label>
+                <div className="space-y-3">
+                  {placements.map((p) => (
+                    <label
+                      key={p.id}
+                      className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <Checkbox
+                        checked={selectedPlacements.includes(p.id)}
+                        onCheckedChange={() => togglePlacement(p.id)}
+                      />
+                      <div className="flex-1 flex items-center justify-between">
+                        <span className="text-sm font-medium">{p.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {p.price > 0 ? `৳${p.price.toLocaleString("bn-BD")}/মাস` : "আলোচনা সাপেক্ষে"}
+                        </span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Selected Summary */}
+              {selectedPlacements.length > 0 && (
                 <div className="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/20 text-sm">
-                  নির্বাচিত: <strong>{placements.find(p => p.id === selected)?.name}</strong> — ৳{placements.find(p => p.id === selected)?.price.toLocaleString("bn-BD")}/মাস
+                  <p className="font-medium mb-1">নির্বাচিত: {selectedDetails.map((p) => p.name).join(", ")}</p>
+                  {totalPrice > 0 && (
+                    <p className="text-primary font-semibold">মোট: ৳{totalPrice.toLocaleString("bn-BD")}/মাস</p>
+                  )}
+                  {hasGoogleAds && (
+                    <p className="text-muted-foreground text-xs mt-1">* Google Ads এর মূল্য আলোচনা সাপেক্ষে নির্ধারিত হবে</p>
+                  )}
                 </div>
               )}
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label>নাম *</Label>
@@ -174,7 +239,7 @@ export default function Advertise() {
                   <Label>মেসেজ</Label>
                   <Textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} rows={3} maxLength={500} placeholder="আপনার বিজ্ঞাপন সম্পর্কে বিস্তারিত..." />
                 </div>
-                <Button type="submit" disabled={loading || !selected} className="w-full">
+                <Button type="submit" disabled={loading || selectedPlacements.length === 0} className="w-full">
                   {loading ? "পাঠানো হচ্ছে..." : "অর্ডার পাঠান"}
                 </Button>
               </form>
