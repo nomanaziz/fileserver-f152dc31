@@ -44,6 +44,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_inquiries: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string | null
+          name: string
+          phone: string | null
+          placement: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message?: string | null
+          name: string
+          phone?: string | null
+          placement: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string | null
+          name?: string
+          phone?: string | null
+          placement?: string
+          status?: string
+        }
+        Relationships: []
+      }
       ads: {
         Row: {
           ad_type: string | null
