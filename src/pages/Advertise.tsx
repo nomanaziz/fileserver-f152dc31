@@ -141,7 +141,7 @@ export default function Advertise() {
         {submitted ? (
           <Card className="max-w-lg mx-auto text-center">
             <CardContent className="pt-8 pb-8">
-              <Check className="h-12 w-12 text-green-500 mx-auto mb-4" />
+              <Check className="h-12 w-12 text-primary mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">ধন্যবাদ!</h3>
               <p className="text-muted-foreground">আপনার অনুরোধ পাওয়া গেছে। আমরা শীঘ্রই যোগাযোগ করবো।</p>
             </CardContent>
