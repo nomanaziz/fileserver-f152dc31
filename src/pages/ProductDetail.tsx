@@ -9,7 +9,7 @@ import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Heart, ShoppingCart, ArrowLeft, Monitor, HardDrive, Calendar, Lock, Crown } from "lucide-react";
+import { Download, Heart, ShoppingCart, ArrowLeft, Monitor, HardDrive, Calendar, Lock, Crown, Store } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -38,6 +38,20 @@ export default function ProductDetail() {
       return data;
     },
     enabled: !!product?.id,
+  });
+
+  const { data: vendorInfo } = useQuery({
+    queryKey: ["product-vendor", product?.vendor_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vendor_profiles")
+        .select("id, store_name, logo_url, is_verified")
+        .eq("id", product!.vendor_id!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!product?.vendor_id && !!product?.is_vendor_product,
   });
 
   if (isLoading) {
