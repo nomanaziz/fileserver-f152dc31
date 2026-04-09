@@ -1,17 +1,20 @@
 
 
-# Hero Background-এ Random Download Icons যোগ করা
+# বিজ্ঞাপন ফর্মে Multi-Select Placement + Google Ads Option যোগ
 
 ## কী করব
-Hero section (`"Download Everything You Need"`) এর background-এ হালকা opacity-তে বিভিন্ন download/tech আইকন ছড়িয়ে দেওয়া হবে — কিছু সোজা, কিছু বাঁকা (rotated), random position-এ। এতে hero section দেখতে আরো আকর্ষণীয় হবে।
+অর্ডার ফর্মে একটি checkbox-based multi-select যোগ করা হবে যেখানে ইউজার একাধিক বিজ্ঞাপন স্থান select করতে পারবে। সাথে "Google Ads" option-ও থাকবে। উপরের card-click single select সরিয়ে ফর্মের ভেতরেই placement selection থাকবে।
 
-## ডিজাইন
-- ১৫-২০টি Lucide আইকন ব্যবহার: `Download`, `File`, `Folder`, `Monitor`, `Smartphone`, `Gamepad2`, `Film`, `Music`, `Code`, `Image`, `HardDrive`, `Wifi`, `Globe`, `Shield`, `Zap`, `Cloud`, `Database`, `Terminal` ইত্যাদি
-- প্রতিটি আইকন absolute positioned, low opacity (`opacity-[0.04]` বা `opacity-[0.06]`), বিভিন্ন সাইজ (16px-32px)
-- বিভিন্ন rotation: `-15deg`, `12deg`, `-30deg`, `20deg` ইত্যাদি
-- Hero section-এ `relative overflow-hidden` যোগ করা হবে যেন আইকন বাইরে না যায়
-- Content এর নিচে থাকবে (`z-0`), text উপরে (`z-10`)
+## পরিবর্তন
 
-## ফাইল
-- **Edit:** `src/pages/Index.tsx` — hero `<section>`-এ background icon layer যোগ
+### `src/pages/Advertise.tsx`
+1. **State পরিবর্তন**: `selected: string | null` → `selectedPlacements: string[]` (array for multi-select)
+2. **ফর্মে Checkbox Group যোগ**: নাম/ইমেইল ফিল্ডের আগে "আপনার কাঙ্ক্ষিত বিজ্ঞাপন নির্বাচন করুন" label সহ checkbox list — ৪টি existing placement + "Google Ads" option
+3. **Placement card click**: উপরের placement card গুলোতে click করলেও array-তে toggle হবে (multi-select)
+4. **নির্বাচিত summary**: ফর্মে selected placement গুলোর নাম ও মোট মূল্য দেখাবে
+5. **Submit**: `placement` ফিল্ডে comma-separated string বা JSON array পাঠাবে (যেমন `"header-banner,sidebar,google-ads"`)
+6. **Google Ads entry**: placements array-তে নতুন item — `{ id: "google-ads", name: "Google Ads", size: "কাস্টম", price: 0 (আলোচনা সাপেক্ষে), icon: Globe, description: "Google Ads ক্যাম্পেইন সেটআপ ও ম্যানেজমেন্ট" }`
+
+### ফাইল
+- **Edit:** `src/pages/Advertise.tsx`
 
