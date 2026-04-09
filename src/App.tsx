@@ -25,6 +25,7 @@ import BecomeVendor from "./pages/BecomeVendor";
 import VendorStore from "./pages/VendorStore";
 import FavoritesPage from "./pages/FavoritesPage";
 import CartPage from "./pages/CartPage";
+import Advertise from "./pages/Advertise";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -87,6 +88,7 @@ const App = () => (
             <Route path="/store/:id" element={<VendorStore />} />
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/cart" element={<CartPage />} />
+            <Route path="/advertise" element={<Advertise />} />
 
             <Route path="/vendor" element={<VendorLayout />}>
               <Route index element={<VendorDashboard />} />
