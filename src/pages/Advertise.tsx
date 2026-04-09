@@ -62,6 +62,10 @@ export default function Advertise() {
     }
   }, [searchParams, slots]);
 
+  if (!authLoading && !user) {
+    return <Navigate to="/login" replace />;
+  }
+
   const togglePlacement = (id: string) => {
     setSelectedPlacements((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
