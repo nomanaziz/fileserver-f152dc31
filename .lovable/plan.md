@@ -1,51 +1,17 @@
 
+# Footer পুনর্গঠন — ৩ কলাম, ডুপ্লিকেট সরানো, আইনি inline
 
-# ডামি বিজ্ঞাপন প্লেসমেন্ট + Footer পুনরুদ্ধার
+## পরিকল্পনা
 
-## Summary
-দুটি কাজ: (1) সাইটের বিভিন্ন পেজে ৪টি ad placement-এ ডামি বিজ্ঞাপন বক্স দেখানো — সাইজ, মূল্য, মেয়াদ সহ, ক্লিক করলে `/advertise` পেজে যাবে। (2) Footer-এ হারিয়ে যাওয়া hardcoded default links ফিরিয়ে আনা — DB menu items না থাকলেও fallback sections দেখাবে।
+৪টি মেনু কলাম → ৩টিতে কমানো। "আইনি" কে আলাদা কলাম না রেখে copyright bar-এ inline links হিসেবে রাখা হবে (Privacy Policy · Terms · DMCA)। ডুপ্লিকেট লিংক সরানো হবে।
 
-## 1. AdPlaceholder Component তৈরি
+### Grid: `md:grid-cols-4` (Brand col-span-2 + ২টি মেনু কলাম)
 
-`src/components/AdPlaceholder.tsx` — reusable component:
-- Props: `placement` (header-banner | sidebar | in-content | before-download)
-- Placement অনুযায়ী সাইজ, মূল্য দেখাবে (Advertise.tsx থেকে same data)
-- ডিজাইন: dashed border, muted background, কোণায় ছোট "বিজ্ঞাপন" label
-- মাঝে: সাইজ (728×90), মূল্য (৳৫,০০০/মাস), মেয়াদ (৩০ দিন)
-- ক্লিক করলে `/advertise` পেজে redirect হবে with pre-selected placement
-- "এখানে বিজ্ঞাপন দিন" subtle CTA
+**কলাম ১-২ (Brand):** যেমন আছে  
+**কলাম ৩ — গুরুত্বপূর্ণ লিংক:** হোম, ক্যাটাগরি, প্রাইসিং, লাইভ টিভি, বিজ্ঞাপন দিন, যোগাযোগ  
+**কলাম ৪ — তথ্য:** আমাদের সম্পর্কে, ব্লগ, FAQ, রিফান্ড পলিসি, ভেন্ডর হোন  
 
-## 2. পেজে Ad Placement বসানো
+**Copyright bar-এ (নিচে):** প্রাইভেসি পলিসি · শর্তাবলী · DMCA — inline links, separator দিয়ে
 
-**Index.tsx:**
-- Hero section-এর নিচে: `header-banner` (728×90)
-- Sidebar-এ SoftwareRequestForm-এর পরে: `sidebar` (300×250)
-
-**CategoryPage.tsx:**
-- Sidebar-এর নিচে: `sidebar` (300×250)
-
-**ProductDetail.tsx:**
-- Download section-এর আগে: `before-download` (728×90)
-- Content-এর মাঝে: `in-content` (468×60)
-
-## 3. Footer — Default Links পুনরুদ্ধার
-
-Footer.tsx update — DB items না থাকলে fallback hardcoded sections দেখাবে:
-
-**Quick Links:** Home, Categories, Pricing, Live TV, Advertise
-**Legal:** Privacy Policy, Terms of Service, DMCA
-**Social:** Facebook, YouTube, Telegram (already আছে)
-
-DB থেকে items পাওয়া গেলে সেগুলো দেখাবে, না পাওয়া গেলে fallback sections দেখাবে। দুটোই কাজ করবে।
-
-## Files
-
-**Create:**
-- `src/components/AdPlaceholder.tsx` — reusable dummy ad component
-
-**Edit:**
-- `src/pages/Index.tsx` — header-banner + sidebar ad placement
-- `src/pages/CategoryPage.tsx` — sidebar ad placement
-- `src/pages/ProductDetail.tsx` — before-download + in-content ad
-- `src/components/layout/Footer.tsx` — fallback hardcoded links when no DB items
-
+### ফাইল
+- **Edit:** `src/components/layout/Footer.tsx` — grid `md:grid-cols-4`, ৩য় "আইনি" কলাম সরিয়ে copyright row-তে inline legal links যোগ
