@@ -1,55 +1,51 @@
 
 
-# "আমাদের ওয়েবসাইটে বিজ্ঞাপন দিন" — Advertise Page
+# ডামি বিজ্ঞাপন প্লেসমেন্ট + Footer পুনরুদ্ধার
 
 ## Summary
-একটি public page তৈরি হবে `/advertise` route-এ, যেখানে advertiser-রা দেখবে কোন কোন জায়গায় ad দেওয়া যায়, সাইজ কত, প্রাইস কত — এবং সরাসরি contact/purchase করতে পারবে। ডিজাইন হবে clean, native content-এর মতো — "বিজ্ঞাপন" মনে হবে না।
+দুটি কাজ: (1) সাইটের বিভিন্ন পেজে ৪টি ad placement-এ ডামি বিজ্ঞাপন বক্স দেখানো — সাইজ, মূল্য, মেয়াদ সহ, ক্লিক করলে `/advertise` পেজে যাবে। (2) Footer-এ হারিয়ে যাওয়া hardcoded default links ফিরিয়ে আনা — DB menu items না থাকলেও fallback sections দেখাবে।
 
-## Ad Placement Options (Hardcoded — কম, পরিষ্কার)
+## 1. AdPlaceholder Component তৈরি
 
-| Placement | Size | মাসিক মূল্য | বর্ণনা |
-|-----------|------|-------------|---------|
-| Header Banner | 728×90 | ৳৫০০ | সাইটের উপরে, সব পেজে দেখায় |
-| Sidebar | 300×250 | ৳৩০০ | ক্যাটাগরি/প্রোডাক্ট পেজে পাশে |
-| In-Content | 468×60 | ৳২০০ | ডাউনলোড পেজের মাঝে, content-এর সাথে মিশে যায় |
-| Before Download | 728×90 | ৳৪০০ | ডাউনলোড বাটনের ঠিক আগে — highest visibility |
+`src/components/AdPlaceholder.tsx` — reusable component:
+- Props: `placement` (header-banner | sidebar | in-content | before-download)
+- Placement অনুযায়ী সাইজ, মূল্য দেখাবে (Advertise.tsx থেকে same data)
+- ডিজাইন: dashed border, muted background, কোণায় ছোট "বিজ্ঞাপন" label
+- মাঝে: সাইজ (728×90), মূল্য (৳৫,০০০/মাস), মেয়াদ (৩০ দিন)
+- ক্লিক করলে `/advertise` পেজে redirect হবে with pre-selected placement
+- "এখানে বিজ্ঞাপন দিন" subtle CTA
 
-মাত্র ৪টি option — জায়গা নষ্ট হবে না, native look বজায় থাকবে।
+## 2. পেজে Ad Placement বসানো
 
-## Design Approach — "Native Ad" Feel
-- Card-based layout, সাইটের বাকি content-এর মতো same styling
-- Preview mockup দেখাবে কোথায় ad বসবে (simple illustration/placeholder)
-- No flashy colors — muted, professional tone
-- "বিজ্ঞাপন দিন" CTA button → contact form বা WhatsApp/Telegram link
+**Index.tsx:**
+- Hero section-এর নিচে: `header-banner` (728×90)
+- Sidebar-এ SoftwareRequestForm-এর পরে: `sidebar` (300×250)
 
-## Changes
+**CategoryPage.tsx:**
+- Sidebar-এর নিচে: `sidebar` (300×250)
 
-### 1. Create `/advertise` page (`src/pages/Advertise.tsx`)
-- Hero section: "আমাদের সাইটে বিজ্ঞাপন দিন" heading
-- Stats: monthly visitors, page views (hardcoded or from settings)
-- Ad placement cards: 4টি option — placement name, size, price, short description, visual preview area
-- "অর্ডার করুন" button → opens a simple contact form (name, email, phone, selected placement) or redirects to Telegram/contact
-- FAQ section: payment method, duration, custom sizes etc.
+**ProductDetail.tsx:**
+- Download section-এর আগে: `before-download` (728×90)
+- Content-এর মাঝে: `in-content` (468×60)
 
-### 2. Add route in `App.tsx`
-- `/advertise` → Advertise page
+## 3. Footer — Default Links পুনরুদ্ধার
 
-### 3. Add to navigation
-- Footer menu-তে "বিজ্ঞাপন দিন" link (admin menu items থেকেও করা যাবে, কিন্তু default-এ Navbar-তে একটা subtle link রাখবো)
+Footer.tsx update — DB items না থাকলে fallback hardcoded sections দেখাবে:
 
-### 4. Database — Ad inquiry table (migration)
-- `ad_inquiries` table: name, email, phone, placement, message, status (pending/contacted/completed), created_at
-- Admin dashboard-এ এই inquiries দেখতে পারবে
+**Quick Links:** Home, Categories, Pricing, Live TV, Advertise
+**Legal:** Privacy Policy, Terms of Service, DMCA
+**Social:** Facebook, YouTube, Telegram (already আছে)
+
+DB থেকে items পাওয়া গেলে সেগুলো দেখাবে, না পাওয়া গেলে fallback sections দেখাবে। দুটোই কাজ করবে।
 
 ## Files
 
 **Create:**
-- `src/pages/Advertise.tsx` — advertise page with placement cards + contact form
+- `src/components/AdPlaceholder.tsx` — reusable dummy ad component
 
 **Edit:**
-- `src/App.tsx` — add `/advertise` route
-- `src/components/layout/Navbar.tsx` — add "বিজ্ঞাপন দিন" link (subtle, footer-এ or nav-এ)
-
-**Migration:**
-- `ad_inquiries` table create with RLS (public insert, admin select)
+- `src/pages/Index.tsx` — header-banner + sidebar ad placement
+- `src/pages/CategoryPage.tsx` — sidebar ad placement
+- `src/pages/ProductDetail.tsx` — before-download + in-content ad
+- `src/components/layout/Footer.tsx` — fallback hardcoded links when no DB items
 
