@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 
 export default function CheckoutPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { data: cartItems } = useCart();
   const [processing, setProcessing] = useState(false);
@@ -30,6 +30,18 @@ export default function CheckoutPage() {
     },
   });
 
+  const { data: paystationEnabled } = useQuery({
+    queryKey: ["paystation-enabled"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "paystation_enabled")
+        .maybeSingle();
+      return data?.value === "true";
+    },
+  });
+
   if (!user) {
     navigate("/login");
     return null;
@@ -37,11 +49,61 @@ export default function CheckoutPage() {
 
   const total = cartItems?.reduce((sum: number, item: any) => sum + (item.products?.price || 0), 0) || 0;
 
-  const handleCheckout = async () => {
+  const handlePayStation = async () => {
     if (!cartItems || cartItems.length === 0) return;
     setProcessing(true);
     try {
-      // Create payment records for each cart item
+      // Create a pending payment record for the total
+      const firstProduct = cartItems[0]?.products as any;
+      const { data: payment, error: payErr } = await supabase
+        .from("payments")
+        .insert({
+          user_id: user.id,
+          product_id: cartItems.length === 1 ? cartItems[0].product_id : null,
+          amount: total,
+          status: "pending",
+          payment_method: "paystation",
+          vendor_id: firstProduct?.vendor_id || null,
+        })
+        .select("id")
+        .single();
+      if (payErr) throw payErr;
+
+      // Call edge function
+      const { data, error } = await supabase.functions.invoke("paystation-initiate", {
+        body: {
+          payment_id: payment.id,
+          amount: total,
+          cust_name: profile?.display_name || user.email,
+          cust_email: user.email,
+          cust_phone: profile?.phone || "",
+          product_id: cartItems.length === 1 ? cartItems[0].product_id : null,
+          vendor_id: firstProduct?.vendor_id || null,
+          redirect_url: window.location.origin + "/dashboard",
+        },
+      });
+
+      if (error) throw error;
+      if (data?.payment_url) {
+        // Clear cart before redirect
+        for (const item of cartItems) {
+          await supabase.from("cart_items").delete().eq("id", item.id);
+        }
+        window.location.href = data.payment_url;
+      } else {
+        throw new Error("Payment URL not received");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "পেমেন্ট শুরু করা যায়নি");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleManualCheckout = async () => {
+    if (!cartItems || cartItems.length === 0) return;
+    setProcessing(true);
+    try {
       for (const item of cartItems) {
         const product = item.products as any;
         const { error } = await supabase.from("payments").insert({
@@ -54,12 +116,9 @@ export default function CheckoutPage() {
         });
         if (error) throw error;
       }
-
-      // Clear cart
       for (const item of cartItems) {
         await supabase.from("cart_items").delete().eq("id", item.id);
       }
-
       toast.success("পেমেন্ট সফল হয়েছে!");
       navigate("/dashboard");
     } catch (e: any) {
@@ -117,16 +176,23 @@ export default function CheckoutPage() {
             </Card>
           ) : null}
 
-          <Button className="w-full h-11" onClick={handleCheckout} disabled={processing || !cartItems?.length}>
-            {processing ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                প্রসেসিং...
-              </>
-            ) : (
-              `পে করুন — ৳${total}`
-            )}
-          </Button>
+          {paystationEnabled ? (
+            <Button className="w-full h-11" onClick={handlePayStation} disabled={processing || !cartItems?.length}>
+              {processing ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> প্রসেসিং...</>
+              ) : (
+                `PayStation দিয়ে পে করুন — ৳${total}`
+              )}
+            </Button>
+          ) : (
+            <Button className="w-full h-11" onClick={handleManualCheckout} disabled={processing || !cartItems?.length}>
+              {processing ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> প্রসেসিং...</>
+              ) : (
+                `পে করুন — ৳${total}`
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </Layout>

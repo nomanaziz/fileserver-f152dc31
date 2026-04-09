@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Save } from "lucide-react";
+import { Save, CreditCard } from "lucide-react";
 
 const settingFields = [
   { key: "site_name", label: "Site Name", placeholder: "File Server BD" },
@@ -22,6 +23,11 @@ const settingFields = [
   { key: "youtube_link", label: "YouTube Link", placeholder: "https://youtube.com/channel" },
 ];
 
+const paystationFields = [
+  { key: "paystation_merchant_id", label: "Merchant ID", placeholder: "আপনার PayStation Merchant ID" },
+  { key: "paystation_password", label: "Password", placeholder: "আপনার PayStation Password" },
+];
+
 export default function AdminSettings() {
   const qc = useQueryClient();
   const [values, setValues] = useState<Record<string, string>>({});
@@ -30,7 +36,8 @@ export default function AdminSettings() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      for (const field of settingFields) {
+      const allFields = [...settingFields, ...paystationFields, { key: "paystation_enabled" }];
+      for (const field of allFields) {
         const existing = settings?.find(s => s.key === field.key);
         if (existing) { await supabase.from("site_settings").update({ value: values[field.key] || null }).eq("id", existing.id); }
         else if (values[field.key]) { await supabase.from("site_settings").insert({ key: field.key, value: values[field.key] }); }
@@ -46,9 +53,43 @@ export default function AdminSettings() {
       <Card><CardHeader><CardTitle>General Settings</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           {settingFields.map(field => <div key={field.key} className="space-y-2"><Label>{field.label}</Label><Input value={values[field.key] || ""} onChange={e => setValues({ ...values, [field.key]: e.target.value })} placeholder={field.placeholder} /></div>)}
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="w-full"><Save className="h-4 w-4 mr-2" /> Save Settings</Button>
         </CardContent>
       </Card>
+
+      <Card className="border-primary/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5" /> PayStation পেমেন্ট গেটওয়ে</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-3 rounded-md bg-muted">
+            <div>
+              <p className="font-medium text-sm">PayStation সক্রিয় করুন</p>
+              <p className="text-xs text-muted-foreground">এটি চালু করলে চেকআউটে PayStation ব্যবহার হবে</p>
+            </div>
+            <Switch
+              checked={values.paystation_enabled === "true"}
+              onCheckedChange={(checked) => setValues({ ...values, paystation_enabled: checked ? "true" : "false" })}
+            />
+          </div>
+          {paystationFields.map(field => (
+            <div key={field.key} className="space-y-2">
+              <Label>{field.label}</Label>
+              <Input
+                value={values[field.key] || ""}
+                onChange={e => setValues({ ...values, [field.key]: e.target.value })}
+                placeholder={field.placeholder}
+                type={field.key === "paystation_password" ? "password" : "text"}
+              />
+            </div>
+          ))}
+          <p className="text-xs text-muted-foreground">
+            PayStation থেকে Merchant ID ও Password পেতে{" "}
+            <a href="https://www.paystation.com.bd" target="_blank" rel="noopener" className="text-primary underline">paystation.com.bd</a> তে রেজিস্ট্রেশন করুন।
+          </p>
+        </CardContent>
+      </Card>
+
+      <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="w-full"><Save className="h-4 w-4 mr-2" /> Save Settings</Button>
     </div>
   );
 }
