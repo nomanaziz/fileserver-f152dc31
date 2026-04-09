@@ -1,50 +1,55 @@
 
 
-# Manual Payment + Footer Social + Category Sidebar Filter
+# "আমাদের ওয়েবসাইটে বিজ্ঞাপন দিন" — Advertise Page
 
 ## Summary
-তিনটি কাজ: (1) Checkout page-এ manual payment system উন্নত — select করার পরেই account details দেখাবে, (2) Footer-এ শুধু Telegram, Facebook, YouTube icon রাখা — বাকি সব remove, (3) Category page sidebar-এ শুধু current category-র subcategories দেখানো — checkbox filter সহ।
+একটি public page তৈরি হবে `/advertise` route-এ, যেখানে advertiser-রা দেখবে কোন কোন জায়গায় ad দেওয়া যায়, সাইজ কত, প্রাইস কত — এবং সরাসরি contact/purchase করতে পারবে। ডিজাইন হবে clean, native content-এর মতো — "বিজ্ঞাপন" মনে হবে না।
+
+## Ad Placement Options (Hardcoded — কম, পরিষ্কার)
+
+| Placement | Size | মাসিক মূল্য | বর্ণনা |
+|-----------|------|-------------|---------|
+| Header Banner | 728×90 | ৳৫০০ | সাইটের উপরে, সব পেজে দেখায় |
+| Sidebar | 300×250 | ৳৩০০ | ক্যাটাগরি/প্রোডাক্ট পেজে পাশে |
+| In-Content | 468×60 | ৳২০০ | ডাউনলোড পেজের মাঝে, content-এর সাথে মিশে যায় |
+| Before Download | 728×90 | ৳৪০০ | ডাউনলোড বাটনের ঠিক আগে — highest visibility |
+
+মাত্র ৪টি option — জায়গা নষ্ট হবে না, native look বজায় থাকবে।
+
+## Design Approach — "Native Ad" Feel
+- Card-based layout, সাইটের বাকি content-এর মতো same styling
+- Preview mockup দেখাবে কোথায় ad বসবে (simple illustration/placeholder)
+- No flashy colors — muted, professional tone
+- "বিজ্ঞাপন দিন" CTA button → contact form বা WhatsApp/Telegram link
 
 ## Changes
 
-### 1. Checkout — Manual Payment UX উন্নত
-`src/pages/CheckoutPage.tsx`:
-- Payment methods গুলো প্রথমে শুধু নাম + icon দিয়ে radio-style list দেখাবে (বিকাশ Personal, নগদ Personal, Rocket, Bank ইত্যাদি)
-- User যেটা select করবে সেটার details expand হবে — account number, instructions, copy button
-- Select না করলে details hidden থাকবে
-- "পেমেন্ট করেছি" button শুধু selected method-এর নিচে দেখাবে
-- এটা already আছে কিন্তু UX improve করবো — collapsed cards, selected-এ expand
+### 1. Create `/advertise` page (`src/pages/Advertise.tsx`)
+- Hero section: "আমাদের সাইটে বিজ্ঞাপন দিন" heading
+- Stats: monthly visitors, page views (hardcoded or from settings)
+- Ad placement cards: 4টি option — placement name, size, price, short description, visual preview area
+- "অর্ডার করুন" button → opens a simple contact form (name, email, phone, selected placement) or redirects to Telegram/contact
+- FAQ section: payment method, duration, custom sizes etc.
 
-### 2. Footer — শুধু Telegram, Facebook, YouTube
-`src/components/layout/Footer.tsx`:
-- Fallback social icons থেকে Github, Twitter remove করবো
-- শুধু Telegram, Facebook, YouTube icon রাখবো
-- `socialIcons` map থেকে `twitter_url`, `whatsapp_url` remove
-- Fallback section-এ শুধু তিনটা icon: Facebook, Youtube, Telegram
-- Email subscribe section remove করবো (দরকার নেই)
+### 2. Add route in `App.tsx`
+- `/advertise` → Advertise page
 
-### 3. Category Sidebar — Context-Aware Subcategory Filter
-`src/components/layout/CategorySidebar.tsx` rewrite:
-- Props দিয়ে current parent category ID নেবে
-- শুধু সেই parent-এর subcategories দেখাবে (সব category না)
-- Checkbox style — multiple subcategory select করা যাবে
-- Selected subcategories parent component-এ callback দিয়ে পাঠাবে
+### 3. Add to navigation
+- Footer menu-তে "বিজ্ঞাপন দিন" link (admin menu items থেকেও করা যাবে, কিন্তু default-এ Navbar-তে একটা subtle link রাখবো)
 
-`src/pages/CategoryPage.tsx` update:
-- CategorySidebar-কে current category pass করবে
-- Selected subcategory IDs state maintain করবে
-- Products filter করবে: selected subcategories থাকলে সেগুলোর products, না থাকলে parent category-র সব products
-- `useProducts` hook-এ multiple category_id support যোগ করতে হবে
-
-`src/hooks/useProducts.ts` update:
-- `category_ids` array filter option যোগ — `.in("category_id", ids)` ব্যবহার করবে
+### 4. Database — Ad inquiry table (migration)
+- `ad_inquiries` table: name, email, phone, placement, message, status (pending/contacted/completed), created_at
+- Admin dashboard-এ এই inquiries দেখতে পারবে
 
 ## Files
 
+**Create:**
+- `src/pages/Advertise.tsx` — advertise page with placement cards + contact form
+
 **Edit:**
-- `src/pages/CheckoutPage.tsx` — collapsed/expanded payment method cards
-- `src/components/layout/Footer.tsx` — only Telegram, Facebook, YouTube; remove email subscribe
-- `src/components/layout/CategorySidebar.tsx` — context-aware subcategory checkboxes
-- `src/pages/CategoryPage.tsx` — pass parent category, handle subcategory filter state
-- `src/hooks/useProducts.ts` — add `category_ids` array filter
+- `src/App.tsx` — add `/advertise` route
+- `src/components/layout/Navbar.tsx` — add "বিজ্ঞাপন দিন" link (subtle, footer-এ or nav-এ)
+
+**Migration:**
+- `ad_inquiries` table create with RLS (public insert, admin select)
 
