@@ -628,6 +628,7 @@ export type Database = {
           subscription_id: string | null
           transaction_id: string | null
           user_id: string
+          vendor_id: string | null
         }
         Insert: {
           amount: number
@@ -641,6 +642,7 @@ export type Database = {
           subscription_id?: string | null
           transaction_id?: string | null
           user_id: string
+          vendor_id?: string | null
         }
         Update: {
           amount?: number
@@ -654,6 +656,7 @@ export type Database = {
           subscription_id?: string | null
           transaction_id?: string | null
           user_id?: string
+          vendor_id?: string | null
         }
         Relationships: [
           {
@@ -737,6 +740,7 @@ export type Database = {
           is_featured: boolean
           is_paid: boolean
           is_trending: boolean | null
+          is_vendor_product: boolean
           is_verified: boolean | null
           license_type: string | null
           os_type: Database["public"]["Enums"]["os_type"] | null
@@ -752,6 +756,8 @@ export type Database = {
           thumbnail_url: string | null
           title: string
           updated_at: string
+          vendor_id: string | null
+          vendor_status: string
           version: string | null
           video_duration: string | null
           video_url: string | null
@@ -776,6 +782,7 @@ export type Database = {
           is_featured?: boolean
           is_paid?: boolean
           is_trending?: boolean | null
+          is_vendor_product?: boolean
           is_verified?: boolean | null
           license_type?: string | null
           os_type?: Database["public"]["Enums"]["os_type"] | null
@@ -791,6 +798,8 @@ export type Database = {
           thumbnail_url?: string | null
           title: string
           updated_at?: string
+          vendor_id?: string | null
+          vendor_status?: string
           version?: string | null
           video_duration?: string | null
           video_url?: string | null
@@ -815,6 +824,7 @@ export type Database = {
           is_featured?: boolean
           is_paid?: boolean
           is_trending?: boolean | null
+          is_vendor_product?: boolean
           is_verified?: boolean | null
           license_type?: string | null
           os_type?: Database["public"]["Enums"]["os_type"] | null
@@ -830,6 +840,8 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
+          vendor_id?: string | null
+          vendor_status?: string
           version?: string | null
           video_duration?: string | null
           video_url?: string | null
@@ -1101,6 +1113,132 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      vendor_earnings: {
+        Row: {
+          commission_amount: number
+          created_at: string
+          id: string
+          payment_id: string | null
+          product_id: string | null
+          sale_amount: number
+          vendor_amount: number
+          vendor_id: string
+        }
+        Insert: {
+          commission_amount?: number
+          created_at?: string
+          id?: string
+          payment_id?: string | null
+          product_id?: string | null
+          sale_amount?: number
+          vendor_amount?: number
+          vendor_id: string
+        }
+        Update: {
+          commission_amount?: number
+          created_at?: string
+          id?: string
+          payment_id?: string | null
+          product_id?: string | null
+          sale_amount?: number
+          vendor_amount?: number
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_earnings_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_earnings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_payouts: {
+        Row: {
+          account_details: Json | null
+          admin_note: string | null
+          amount: number
+          created_at: string
+          id: string
+          payment_method: string | null
+          processed_at: string | null
+          status: string
+          vendor_id: string
+        }
+        Insert: {
+          account_details?: Json | null
+          admin_note?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          payment_method?: string | null
+          processed_at?: string | null
+          status?: string
+          vendor_id: string
+        }
+        Update: {
+          account_details?: Json | null
+          admin_note?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_method?: string | null
+          processed_at?: string | null
+          status?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
+      vendor_profiles: {
+        Row: {
+          available_balance: number
+          commission_rate: number
+          created_at: string
+          id: string
+          is_active: boolean
+          is_verified: boolean
+          logo_url: string | null
+          store_description: string | null
+          store_name: string
+          total_earnings: number
+          updated_at: string
+        }
+        Insert: {
+          available_balance?: number
+          commission_rate?: number
+          created_at?: string
+          id: string
+          is_active?: boolean
+          is_verified?: boolean
+          logo_url?: string | null
+          store_description?: string | null
+          store_name: string
+          total_earnings?: number
+          updated_at?: string
+        }
+        Update: {
+          available_balance?: number
+          commission_rate?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_verified?: boolean
+          logo_url?: string | null
+          store_description?: string | null
+          store_name?: string
+          total_earnings?: number
+          updated_at?: string
         }
         Relationships: []
       }
