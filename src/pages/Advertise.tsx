@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,10 +35,11 @@ const stats = [
 ];
 
 export default function Advertise() {
+  const { user, profile, loading: authLoading } = useAuth();
   const [searchParams] = useSearchParams();
   const [selectedPlacements, setSelectedPlacements] = useState<string[]>([]);
   const [duration, setDuration] = useState(1);
-  const [form, setForm] = useState({ name: "", email: "", phone: "" });
+  const [phone, setPhone] = useState("");
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -59,6 +61,10 @@ export default function Advertise() {
       setSelectedPlacements((prev) => (prev.includes(p) ? prev : [p]));
     }
   }, [searchParams, slots]);
+
+  if (!authLoading && !user) {
+    return <Navigate to="/login" replace />;
+  }
 
   const togglePlacement = (id: string) => {
     setSelectedPlacements((prev) =>
@@ -85,15 +91,15 @@ export default function Advertise() {
       toast.error("অন্তত একটি বিজ্ঞাপনের স্থান নির্বাচন করুন।");
       return;
     }
-    if (!form.name || !form.email) {
-      toast.error("নাম ও ইমেইল আবশ্যক।");
+    if (!phone.trim()) {
+      toast.error("মোবাইল নম্বর আবশ্যক।");
       return;
     }
     setLoading(true);
     const { error } = await supabase.from("ad_inquiries").insert({
-      name: form.name,
-      email: form.email,
-      phone: form.phone || null,
+      name: profile?.display_name || user?.email || "",
+      email: user?.email || "",
+      phone: phone.trim(),
       placement: selectedPlacements.join(","),
       message: JSON.stringify({
         duration_months: duration,
@@ -229,16 +235,16 @@ export default function Advertise() {
               <h2 className="text-lg font-semibold mb-3">আপনার তথ্য</h2>
               <div className="space-y-3">
                 <div>
-                  <Label className="text-xs">নাম *</Label>
-                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={100} />
+                  <Label className="text-xs text-muted-foreground">নাম</Label>
+                  <p className="text-sm font-medium">{profile?.display_name || user?.email || "—"}</p>
                 </div>
                 <div>
-                  <Label className="text-xs">ইমেইল *</Label>
-                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} maxLength={255} />
+                  <Label className="text-xs text-muted-foreground">ইমেইল</Label>
+                  <p className="text-sm font-medium">{user?.email || "—"}</p>
                 </div>
                 <div>
-                  <Label className="text-xs">ফোন</Label>
-                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} maxLength={20} placeholder="০১৭XXXXXXXX" />
+                  <Label className="text-xs">মোবাইল নম্বর *</Label>
+                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} placeholder="০১৭XXXXXXXX" required />
                 </div>
               </div>
             </div>
@@ -374,7 +380,7 @@ export default function Advertise() {
                 <Button
                   className="w-full mt-4"
                   size="lg"
-                  disabled={loading || selectedPlacements.length === 0 || !form.name || !form.email}
+                  disabled={loading || selectedPlacements.length === 0 || !phone.trim()}
                   onClick={handleSubmit}
                 >
                   {loading ? "পাঠানো হচ্ছে..." : `অর্ডার করুন${grandTotal > 0 ? ` — ৳${grandTotal.toLocaleString("bn-BD")}` : ""}`}
