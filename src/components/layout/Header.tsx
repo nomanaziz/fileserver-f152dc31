@@ -90,6 +90,7 @@ export default function Header() {
         <div className="flex items-center gap-1">
           {user ? (
             <>
+              <NotificationBell />
               <Button variant="ghost" size="icon" asChild>
                 <Link to="/favorites">
                   <Heart className="h-5 w-5" />
