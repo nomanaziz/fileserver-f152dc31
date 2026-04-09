@@ -77,9 +77,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_slots: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          max_ads: number
+          placement: string
+          price_per_month: number
+          size_label: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_ads?: number
+          placement: string
+          price_per_month?: number
+          size_label?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_ads?: number
+          placement?: string
+          price_per_month?: number
+          size_label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ads: {
         Row: {
+          ad_source: string
           ad_type: string | null
+          advertiser_email: string | null
+          advertiser_name: string | null
           clicks: number | null
           content: string | null
           created_at: string
@@ -98,7 +137,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ad_source?: string
           ad_type?: string | null
+          advertiser_email?: string | null
+          advertiser_name?: string | null
           clicks?: number | null
           content?: string | null
           created_at?: string
@@ -117,7 +159,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ad_source?: string
           ad_type?: string | null
+          advertiser_email?: string | null
+          advertiser_name?: string | null
           clicks?: number | null
           content?: string | null
           created_at?: string
