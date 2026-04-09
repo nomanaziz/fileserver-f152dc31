@@ -90,40 +90,69 @@ export default function Footer() {
             </div>
           )}
 
-          {(!menuItems || menuItems.length === 0) && (
-            <>
-              <div>
-                <h4 className="font-semibold text-xs mb-3 text-foreground uppercase tracking-wider">কুইক লিংক</h4>
-                <ul className="space-y-2 text-xs text-muted-foreground">
-                  {[
-                    { label: "হোম", url: "/" },
-                    { label: "ক্যাটাগরি", url: "/categories" },
-                    { label: "প্রাইসিং", url: "/pricing" },
-                    { label: "লাইভ টিভি", url: "/live-tv" },
-                    { label: "বিজ্ঞাপন দিন", url: "/advertise" },
-                  ].map(item => (
-                    <li key={item.url}>
-                      <Link to={item.url} className="hover:text-primary transition-colors">{item.label}</Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-xs mb-3 text-foreground uppercase tracking-wider">আইনি</h4>
-                <ul className="space-y-2 text-xs text-muted-foreground">
-                  {[
-                    { label: "প্রাইভেসি পলিসি", url: "/page/privacy-policy" },
-                    { label: "শর্তাবলী", url: "/page/terms-of-service" },
-                    { label: "DMCA", url: "/page/dmca" },
-                  ].map(item => (
-                    <li key={item.url}>
-                      <Link to={item.url} className="hover:text-primary transition-colors">{item.label}</Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </>
-          )}
+          {/* Always show fallback important links */}
+          {(() => {
+            const hasQuickLinks = sections.some(s => s.title === "কুইক লিংক" && s.links.length > 0);
+            const hasLegalLinks = sections.some(s => s.title === "আইনি" && s.links.length > 0);
+            const hasInfoLinks = sections.some(s => s.title === "তথ্য" && s.links.length > 0);
+            return (
+              <>
+                {!hasQuickLinks && (
+                  <div>
+                    <h4 className="font-semibold text-xs mb-3 text-foreground uppercase tracking-wider">কুইক লিংক</h4>
+                    <ul className="space-y-2 text-xs text-muted-foreground">
+                      {[
+                        { label: "হোম", url: "/" },
+                        { label: "ক্যাটাগরি", url: "/categories" },
+                        { label: "প্রাইসিং", url: "/pricing" },
+                        { label: "লাইভ টিভি", url: "/live-tv" },
+                        { label: "বিজ্ঞাপন দিন", url: "/advertise" },
+                        { label: "যোগাযোগ", url: "/contact" },
+                      ].map(item => (
+                        <li key={item.url}>
+                          <Link to={item.url} className="hover:text-primary transition-colors">{item.label}</Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {!hasInfoLinks && (
+                  <div>
+                    <h4 className="font-semibold text-xs mb-3 text-foreground uppercase tracking-wider">তথ্য</h4>
+                    <ul className="space-y-2 text-xs text-muted-foreground">
+                      {[
+                        { label: "আমাদের সম্পর্কে", url: "/page/about-us" },
+                        { label: "ব্লগ", url: "/blog" },
+                        { label: "FAQ", url: "/page/faq" },
+                        { label: "রিফান্ড পলিসি", url: "/page/refund-policy" },
+                        { label: "ভেন্ডর হোন", url: "/become-vendor" },
+                      ].map(item => (
+                        <li key={item.url}>
+                          <Link to={item.url} className="hover:text-primary transition-colors">{item.label}</Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {!hasLegalLinks && (
+                  <div>
+                    <h4 className="font-semibold text-xs mb-3 text-foreground uppercase tracking-wider">আইনি</h4>
+                    <ul className="space-y-2 text-xs text-muted-foreground">
+                      {[
+                        { label: "প্রাইভেসি পলিসি", url: "/page/privacy-policy" },
+                        { label: "শর্তাবলী", url: "/page/terms-of-service" },
+                        { label: "DMCA", url: "/page/dmca" },
+                      ].map(item => (
+                        <li key={item.url}>
+                          <Link to={item.url} className="hover:text-primary transition-colors">{item.label}</Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         <div className="mt-8 pt-5 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
