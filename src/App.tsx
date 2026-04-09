@@ -15,9 +15,6 @@ import CategoryPage from "./pages/CategoryPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import ProductDetail from "./pages/ProductDetail";
 import SearchPage from "./pages/SearchPage";
-import BlogList from "./pages/BlogList";
-import BlogPost from "./pages/BlogPost";
-import Contact from "./pages/Contact";
 import StaticPage from "./pages/StaticPage";
 import Dashboard from "./pages/Dashboard";
 import Pricing from "./pages/Pricing";
@@ -80,9 +77,6 @@ const App = () => (
             <Route path="/category/:slug" element={<CategoryPage />} />
             <Route path="/product/:slug" element={<ProductDetail />} />
             <Route path="/search" element={<SearchPage />} />
-            <Route path="/blog" element={<BlogList />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
-            <Route path="/contact" element={<Contact />} />
             <Route path="/page/:slug" element={<StaticPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/pricing" element={<Pricing />} />
