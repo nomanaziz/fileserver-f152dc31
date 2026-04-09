@@ -8,51 +8,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Monitor, LayoutGrid, FileText, Download, Check, Users, Eye, TrendingUp, Globe } from "lucide-react";
+import { Monitor, LayoutGrid, FileText, Download, Check, Users, Eye, TrendingUp } from "lucide-react";
+import { useAdSlotAvailability } from "@/hooks/useAds";
 
-const placements = [
-  {
-    id: "header-banner",
-    name: "হেডার ব্যানার",
-    size: "728×90",
-    price: 5000,
-    icon: Monitor,
-    description: "সাইটের উপরে প্রতিটি পেজে দেখায়। সর্বোচ্চ ভিজিবিলিটি।",
-  },
-  {
-    id: "sidebar",
-    name: "সাইডবার",
-    size: "300×250",
-    price: 3000,
-    icon: LayoutGrid,
-    description: "ক্যাটাগরি ও প্রোডাক্ট পেজের পাশে। টার্গেটেড অডিয়েন্স।",
-  },
-  {
-    id: "in-content",
-    name: "ইন-কন্টেন্ট",
-    size: "468×60",
-    price: 2000,
-    icon: FileText,
-    description: "কন্টেন্টের মাঝে, স্বাভাবিকভাবে মিশে যায়। নেটিভ ফিল।",
-  },
-  {
-    id: "before-download",
-    name: "ডাউনলোডের আগে",
-    size: "728×90",
-    price: 4000,
-    icon: Download,
-    description: "ডাউনলোড বাটনের ঠিক আগে। সর্বোচ্চ ক্লিক রেট।",
-  },
-  {
-    id: "google-ads",
-    name: "Google Ads",
-    size: "কাস্টম",
-    price: 0,
-    icon: Globe,
-    description: "Google Ads ক্যাম্পেইন সেটআপ ও ম্যানেজমেন্ট। মূল্য আলোচনা সাপেক্ষে।",
-  },
-];
+const PLACEMENT_META: Record<string, { name: string; icon: any }> = {
+  header: { name: "হেডার ব্যানার", icon: Monitor },
+  sidebar: { name: "সাইডবার", icon: LayoutGrid },
+  in_content: { name: "ইন-কন্টেন্ট", icon: FileText },
+  before_download: { name: "ডাউনলোডের আগে", icon: Download },
+  footer: { name: "ফুটার", icon: LayoutGrid },
+};
 
 const stats = [
   { label: "মাসিক ভিজিটর", value: "৫০,০০০+", icon: Users },
@@ -66,14 +33,14 @@ export default function Advertise() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const { data: slots } = useAdSlotAvailability();
 
-  // Pre-select from URL query param
   useEffect(() => {
     const p = searchParams.get("placement");
-    if (p && placements.some((pl) => pl.id === p)) {
+    if (p && slots?.some((s: any) => s.placement === p)) {
       setSelectedPlacements((prev) => (prev.includes(p) ? prev : [p]));
     }
-  }, [searchParams]);
+  }, [searchParams, slots]);
 
   const togglePlacement = (id: string) => {
     setSelectedPlacements((prev) =>
@@ -81,9 +48,8 @@ export default function Advertise() {
     );
   };
 
-  const selectedDetails = placements.filter((p) => selectedPlacements.includes(p.id));
-  const totalPrice = selectedDetails.reduce((sum, p) => sum + p.price, 0);
-  const hasGoogleAds = selectedPlacements.includes("google-ads");
+  const selectedSlots = slots?.filter((s: any) => selectedPlacements.includes(s.placement)) || [];
+  const totalPrice = selectedSlots.reduce((sum: number, s: any) => sum + (s.price_per_month || 0), 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,26 +58,25 @@ export default function Advertise() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.from("ad_inquiries" as any).insert({
+    const { error } = await supabase.from("ad_inquiries").insert({
       name: form.name,
       email: form.email,
       phone: form.phone || null,
       placement: selectedPlacements.join(","),
       message: form.message || null,
-    } as any);
+    });
     setLoading(false);
     if (error) {
       toast.error("পাঠাতে ব্যর্থ হয়েছে। আবার চেষ্টা করুন।");
     } else {
       setSubmitted(true);
-      toast.success("আপনার অনুরোধ পাঠানো হয়েছে! শীঘ্রই যোগাযোগ করা হবে।");
+      toast.success("আপনার অনুরোধ পাঠানো হয়েছে!");
     }
   };
 
   return (
     <Layout>
       <div className="container py-8 max-w-5xl">
-        {/* Hero */}
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold mb-3">আমাদের ওয়েবসাইটে বিজ্ঞাপন দিন</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -132,35 +97,42 @@ export default function Advertise() {
           ))}
         </div>
 
-        {/* Placements */}
+        {/* Placement Cards with Availability */}
         <h2 className="text-xl font-semibold mb-4">বিজ্ঞাপনের স্থান ও মূল্য</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-          {placements.map((p) => {
-            const isSelected = selectedPlacements.includes(p.id);
+          {slots?.map((slot: any) => {
+            const meta = PLACEMENT_META[slot.placement] || { name: slot.placement, icon: Monitor };
+            const Icon = meta.icon;
+            const isSelected = selectedPlacements.includes(slot.placement);
+            const isFull = slot.available <= 0;
+
             return (
               <Card
-                key={p.id}
-                className={`cursor-pointer transition-all ${isSelected ? "ring-2 ring-primary border-primary" : "hover:border-primary/50"}`}
-                onClick={() => togglePlacement(p.id)}
+                key={slot.id}
+                className={`cursor-pointer transition-all ${isFull ? "opacity-60 cursor-not-allowed" : ""} ${isSelected ? "ring-2 ring-primary border-primary" : "hover:border-primary/50"}`}
+                onClick={() => !isFull && togglePlacement(slot.placement)}
               >
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-4">
                     <div className={`p-3 rounded-lg ${isSelected ? "bg-primary/10" : "bg-muted"}`}>
-                      <p.icon className={`h-6 w-6 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                      <Icon className={`h-6 w-6 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-semibold">{p.name}</h3>
-                        {isSelected && <Check className="h-5 w-5 text-primary" />}
+                        <h3 className="font-semibold">{meta.name}</h3>
+                        <div className="flex items-center gap-2">
+                          {isFull ? (
+                            <Badge variant="destructive" className="text-[10px]">স্লট পূর্ণ</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">{slot.available}/{slot.max_ads} খালি</Badge>
+                          )}
+                          {isSelected && <Check className="h-5 w-5 text-primary" />}
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">{p.description}</p>
+                      <p className="text-sm text-muted-foreground mb-2">{slot.description}</p>
                       <div className="flex items-center gap-3 text-sm">
-                        <span className="bg-muted px-2 py-0.5 rounded text-xs font-mono">{p.size}</span>
-                        {p.price > 0 ? (
-                          <span className="font-semibold text-primary">৳{p.price.toLocaleString("bn-BD")}/মাস</span>
-                        ) : (
-                          <span className="font-semibold text-primary">আলোচনা সাপেক্ষে</span>
-                        )}
+                        <span className="bg-muted px-2 py-0.5 rounded text-xs font-mono">{slot.size_label}</span>
+                        <span className="font-semibold text-primary">৳{Number(slot.price_per_month).toLocaleString("bn-BD")}/মাস</span>
                       </div>
                     </div>
                   </div>
@@ -170,7 +142,7 @@ export default function Advertise() {
           })}
         </div>
 
-        {/* Contact Form */}
+        {/* Form */}
         {submitted ? (
           <Card className="max-w-lg mx-auto text-center">
             <CardContent className="pt-8 pb-8">
@@ -181,44 +153,38 @@ export default function Advertise() {
           </Card>
         ) : (
           <Card className="max-w-lg mx-auto">
-            <CardHeader>
-              <CardTitle>অর্ডার করুন</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>অর্ডার করুন</CardTitle></CardHeader>
             <CardContent>
-              {/* Placement Checkbox Selection */}
+              {/* Checkbox selection */}
               <div className="mb-6">
                 <Label className="text-base font-semibold mb-3 block">আপনার কাঙ্ক্ষিত বিজ্ঞাপন নির্বাচন করুন *</Label>
                 <div className="space-y-3">
-                  {placements.map((p) => (
-                    <label
-                      key={p.id}
-                      className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <Checkbox
-                        checked={selectedPlacements.includes(p.id)}
-                        onCheckedChange={() => togglePlacement(p.id)}
-                      />
-                      <div className="flex-1 flex items-center justify-between">
-                        <span className="text-sm font-medium">{p.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {p.price > 0 ? `৳${p.price.toLocaleString("bn-BD")}/মাস` : "আলোচনা সাপেক্ষে"}
-                        </span>
-                      </div>
-                    </label>
-                  ))}
+                  {slots?.map((slot: any) => {
+                    const meta = PLACEMENT_META[slot.placement] || { name: slot.placement };
+                    const isFull = slot.available <= 0;
+                    return (
+                      <label key={slot.id} className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${isFull ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-muted/50"}`}>
+                        <Checkbox
+                          checked={selectedPlacements.includes(slot.placement)}
+                          onCheckedChange={() => !isFull && togglePlacement(slot.placement)}
+                          disabled={isFull}
+                        />
+                        <div className="flex-1 flex items-center justify-between">
+                          <span className="text-sm font-medium">{meta.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {isFull ? "স্লট পূর্ণ" : `৳${Number(slot.price_per_month).toLocaleString("bn-BD")}/মাস`}
+                          </span>
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Selected Summary */}
               {selectedPlacements.length > 0 && (
                 <div className="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/20 text-sm">
-                  <p className="font-medium mb-1">নির্বাচিত: {selectedDetails.map((p) => p.name).join(", ")}</p>
-                  {totalPrice > 0 && (
-                    <p className="text-primary font-semibold">মোট: ৳{totalPrice.toLocaleString("bn-BD")}/মাস</p>
-                  )}
-                  {hasGoogleAds && (
-                    <p className="text-muted-foreground text-xs mt-1">* Google Ads এর মূল্য আলোচনা সাপেক্ষে নির্ধারিত হবে</p>
-                  )}
+                  <p className="font-medium mb-1">নির্বাচিত: {selectedSlots.map((s: any) => PLACEMENT_META[s.placement]?.name || s.placement).join(", ")}</p>
+                  <p className="text-primary font-semibold">মোট: ৳{totalPrice.toLocaleString("bn-BD")}/মাস</p>
                 </div>
               )}
 
@@ -252,9 +218,9 @@ export default function Advertise() {
           <h2 className="text-xl font-semibold mb-4 text-center">সচরাচর জিজ্ঞাসা</h2>
           <div className="space-y-4">
             {[
-              { q: "পেমেন্ট কিভাবে করবো?", a: "বিকাশ, নগদ বা ব্যাংক ট্রান্সফারে পেমেন্ট করতে পারবেন। অর্ডার কনফার্ম হলে বিস্তারিত জানানো হবে।" },
+              { q: "পেমেন্ট কিভাবে করবো?", a: "বিকাশ, নগদ বা ব্যাংক ট্রান্সফারে পেমেন্ট করতে পারবেন।" },
               { q: "বিজ্ঞাপনের সময়কাল কত?", a: "সর্বনিম্ন ১ মাস। দীর্ঘমেয়াদী প্যাকেজে ডিসকাউন্ট পাবেন।" },
-              { q: "কাস্টম সাইজ সম্ভব?", a: "হ্যাঁ, আপনার প্রয়োজন অনুযায়ী কাস্টম সাইজ ও প্লেসমেন্ট আলোচনা সাপেক্ষে সম্ভব।" },
+              { q: "কাস্টম সাইজ সম্ভব?", a: "হ্যাঁ, কাস্টম সাইজ ও প্লেসমেন্ট আলোচনা সাপেক্ষে সম্ভব।" },
             ].map((faq, i) => (
               <Card key={i}>
                 <CardContent className="pt-4 pb-4">
