@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Save, CreditCard } from "lucide-react";
+import { Save, CreditCard, Smartphone } from "lucide-react";
 
 const settingFields = [
   { key: "site_name", label: "Site Name", placeholder: "File Server BD" },
@@ -28,6 +28,15 @@ const paystationFields = [
   { key: "paystation_password", label: "Password", placeholder: "আপনার PayStation Password" },
 ];
 
+const bkashFields = [
+  { key: "bkash_app_key", label: "App Key", placeholder: "আপনার bKash App Key" },
+  { key: "bkash_app_secret", label: "App Secret", placeholder: "আপনার bKash App Secret" },
+  { key: "bkash_username", label: "Username", placeholder: "আপনার bKash Username" },
+  { key: "bkash_password", label: "Password", placeholder: "আপনার bKash Password" },
+];
+
+const allToggleKeys = ["paystation_enabled", "bkash_enabled", "bkash_sandbox"];
+
 export default function AdminSettings() {
   const qc = useQueryClient();
   const [values, setValues] = useState<Record<string, string>>({});
@@ -36,7 +45,7 @@ export default function AdminSettings() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const allFields = [...settingFields, ...paystationFields, { key: "paystation_enabled" }];
+      const allFields = [...settingFields, ...paystationFields, ...bkashFields, ...allToggleKeys.map(k => ({ key: k }))];
       for (const field of allFields) {
         const existing = settings?.find(s => s.key === field.key);
         if (existing) { await supabase.from("site_settings").update({ value: values[field.key] || null }).eq("id", existing.id); }
@@ -85,6 +94,49 @@ export default function AdminSettings() {
           <p className="text-xs text-muted-foreground">
             PayStation থেকে Merchant ID ও Password পেতে{" "}
             <a href="https://www.paystation.com.bd" target="_blank" rel="noopener" className="text-primary underline">paystation.com.bd</a> তে রেজিস্ট্রেশন করুন।
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-pink-500/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Smartphone className="h-5 w-5 text-pink-500" /> bKash মার্চেন্ট API</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-3 rounded-md bg-muted">
+            <div>
+              <p className="font-medium text-sm">bKash সক্রিয় করুন</p>
+              <p className="text-xs text-muted-foreground">এটি চালু করলে চেকআউটে bKash পেমেন্ট ব্যবহার হবে</p>
+            </div>
+            <Switch
+              checked={values.bkash_enabled === "true"}
+              onCheckedChange={(checked) => setValues({ ...values, bkash_enabled: checked ? "true" : "false" })}
+            />
+          </div>
+          <div className="flex items-center justify-between p-3 rounded-md bg-muted">
+            <div>
+              <p className="font-medium text-sm">Sandbox Mode</p>
+              <p className="text-xs text-muted-foreground">টেস্টিং এর জন্য Sandbox মোড চালু রাখুন</p>
+            </div>
+            <Switch
+              checked={values.bkash_sandbox === "true"}
+              onCheckedChange={(checked) => setValues({ ...values, bkash_sandbox: checked ? "true" : "false" })}
+            />
+          </div>
+          {bkashFields.map(field => (
+            <div key={field.key} className="space-y-2">
+              <Label>{field.label}</Label>
+              <Input
+                value={values[field.key] || ""}
+                onChange={e => setValues({ ...values, [field.key]: e.target.value })}
+                placeholder={field.placeholder}
+                type={field.key.includes("secret") || field.key.includes("password") ? "password" : "text"}
+              />
+            </div>
+          ))}
+          <p className="text-xs text-muted-foreground">
+            bKash Merchant credentials পেতে{" "}
+            <a href="https://developer.bka.sh" target="_blank" rel="noopener" className="text-primary underline">developer.bka.sh</a> তে রেজিস্ট্রেশন করুন।
           </p>
         </CardContent>
       </Card>
