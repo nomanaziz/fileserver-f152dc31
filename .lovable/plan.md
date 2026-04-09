@@ -1,40 +1,50 @@
 
 
-# Blog/Contact লিংক Remove + Admin-Controlled Dynamic Menus
+# Manual Payment + Footer Social + Category Sidebar Filter
 
 ## Summary
-Blog ও Contact-এর hardcoded লিংক remove করবো। Header ও Footer-এর সব menu items admin panel (Menu Items) থেকে control করা যাবে — কোন link কোথায় দেখাবে সেটা admin ঠিক করবে।
-
-## Current State
-- **Navbar.tsx** (active header): Already loads `headerMenuItems` from DB ✅ — কিন্তু Home, Pricing, Live TV hardcoded আছে (এগুলো থাকবে)
-- **Footer.tsx**: Blog, Contact, About, Pricing, Privacy, Terms সব hardcoded — এগুলো dynamic করতে হবে
-- **Header.tsx**: পুরনো file, Layout ব্যবহার করে না — ignore করা যায়
-- **App.tsx**: Blog/Contact routes আছে — routes রাখবো (admin যদি পরে আবার add করে), শুধু hardcoded nav links remove
+তিনটি কাজ: (1) Checkout page-এ manual payment system উন্নত — select করার পরেই account details দেখাবে, (2) Footer-এ শুধু Telegram, Facebook, YouTube icon রাখা — বাকি সব remove, (3) Category page sidebar-এ শুধু current category-র subcategories দেখানো — checkbox filter সহ।
 
 ## Changes
 
-### 1. Footer.tsx — Fully Dynamic Menus
-- Hardcoded "More" ও "Legal" sections replace করবো DB-driven menu items দিয়ে
-- `menu_items` table থেকে `location = 'footer'` fetch করবো
-- Parent items → section headers, children → links
-- Admin panel থেকে footer sections ও links manage করা যাবে
+### 1. Checkout — Manual Payment UX উন্নত
+`src/pages/CheckoutPage.tsx`:
+- Payment methods গুলো প্রথমে শুধু নাম + icon দিয়ে radio-style list দেখাবে (বিকাশ Personal, নগদ Personal, Rocket, Bank ইত্যাদি)
+- User যেটা select করবে সেটার details expand হবে — account number, instructions, copy button
+- Select না করলে details hidden থাকবে
+- "পেমেন্ট করেছি" button শুধু selected method-এর নিচে দেখাবে
+- এটা already আছে কিন্তু UX improve করবো — collapsed cards, selected-এ expand
 
-### 2. App.tsx — Blog/Contact Routes Remove
-- `/blog`, `/blog/:slug`, `/contact` routes remove
-- Import statements remove
+### 2. Footer — শুধু Telegram, Facebook, YouTube
+`src/components/layout/Footer.tsx`:
+- Fallback social icons থেকে Github, Twitter remove করবো
+- শুধু Telegram, Facebook, YouTube icon রাখবো
+- `socialIcons` map থেকে `twitter_url`, `whatsapp_url` remove
+- Fallback section-এ শুধু তিনটা icon: Facebook, Youtube, Telegram
+- Email subscribe section remove করবো (দরকার নেই)
 
-### 3. Header.tsx Cleanup
-- Hardcoded `navLinks` array থেকে Blog ও Contact remove (backup header file)
+### 3. Category Sidebar — Context-Aware Subcategory Filter
+`src/components/layout/CategorySidebar.tsx` rewrite:
+- Props দিয়ে current parent category ID নেবে
+- শুধু সেই parent-এর subcategories দেখাবে (সব category না)
+- Checkbox style — multiple subcategory select করা যাবে
+- Selected subcategories parent component-এ callback দিয়ে পাঠাবে
 
-## Admin Workflow
-Admin Panel → Menu Items → Add Item:
-- Label: "ব্লগ", URL: "/blog", Location: "header" → Header-এ দেখাবে
-- Label: "যোগাযোগ", URL: "/contact", Location: "footer" → Footer-এ দেখাবে
-- Admin চাইলে যেকোনো সময় add/remove করতে পারবে
+`src/pages/CategoryPage.tsx` update:
+- CategorySidebar-কে current category pass করবে
+- Selected subcategory IDs state maintain করবে
+- Products filter করবে: selected subcategories থাকলে সেগুলোর products, না থাকলে parent category-র সব products
+- `useProducts` hook-এ multiple category_id support যোগ করতে হবে
+
+`src/hooks/useProducts.ts` update:
+- `category_ids` array filter option যোগ — `.in("category_id", ids)` ব্যবহার করবে
 
 ## Files
+
 **Edit:**
-- `src/components/layout/Footer.tsx` — dynamic menu sections from DB
-- `src/components/layout/Header.tsx` — remove Blog/Contact from navLinks
-- `src/App.tsx` — remove Blog/Contact routes & imports
+- `src/pages/CheckoutPage.tsx` — collapsed/expanded payment method cards
+- `src/components/layout/Footer.tsx` — only Telegram, Facebook, YouTube; remove email subscribe
+- `src/components/layout/CategorySidebar.tsx` — context-aware subcategory checkboxes
+- `src/pages/CategoryPage.tsx` — pass parent category, handle subcategory filter state
+- `src/hooks/useProducts.ts` — add `category_ids` array filter
 
