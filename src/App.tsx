@@ -25,6 +25,7 @@ import BecomeVendor from "./pages/BecomeVendor";
 import VendorStore from "./pages/VendorStore";
 import FavoritesPage from "./pages/FavoritesPage";
 import CartPage from "./pages/CartPage";
+import Advertise from "./pages/Advertise";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
