@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import {
   Search, Menu, User, LogOut, Heart, Download, Shield, Command,
-  ShoppingCart, Home, Crown, ChevronDown, ExternalLink, Radio,
+  ShoppingCart, Home, Crown, ChevronDown, ExternalLink, Radio, Store,
 } from "lucide-react";
 import defaultLogo from "@/assets/fileserver-white-logo.png";
 import { Button } from "@/components/ui/button";
