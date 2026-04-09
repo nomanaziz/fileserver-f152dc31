@@ -29,8 +29,6 @@ export default function Header() {
   const navLinks = [
     { label: "হোম", to: "/" },
     { label: "ক্যাটাগরি", to: "/categories" },
-    { label: "ব্লগ", to: "/blog" },
-    { label: "যোগাযোগ", to: "/contact" },
   ];
 
   return (
