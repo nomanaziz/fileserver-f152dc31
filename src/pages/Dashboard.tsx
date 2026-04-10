@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Download, Heart, User, ShoppingBag, Crown } from "lucide-react";
+import { Download, Heart, User, ShoppingBag, Crown, Server, Trash2, ExternalLink } from "lucide-react";
 
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
