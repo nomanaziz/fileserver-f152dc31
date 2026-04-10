@@ -78,22 +78,17 @@ export function useAccessibilityCheck(links: string[]) {
     const results = new Map<string, LinkStatus>(initial);
 
     const checkLink = async (url: string) => {
+      const linkController = new AbortController();
+      const linkTimeout = setTimeout(() => linkController.abort(), TIMEOUT_MS);
+      const onParentAbort = () => linkController.abort();
+      controller.signal.addEventListener("abort", onParentAbort);
+
       try {
-        const timeoutId = setTimeout(() => {
-          // Per-link timeout — create a separate abort for this
-        }, TIMEOUT_MS);
-        const linkController = new AbortController();
-        const linkTimeout = setTimeout(() => linkController.abort(), TIMEOUT_MS);
-
-        // Also abort if parent aborts
-        controller.signal.addEventListener("abort", () => linkController.abort());
-
         await fetch(url, {
           mode: "no-cors",
           signal: linkController.signal,
           cache: "no-store",
         });
-        clearTimeout(timeoutId);
         clearTimeout(linkTimeout);
         if (!controller.signal.aborted) {
           results.set(url, "online");
@@ -104,6 +99,7 @@ export function useAccessibilityCheck(links: string[]) {
           });
         }
       } catch {
+        clearTimeout(linkTimeout);
         if (!controller.signal.aborted) {
           results.set(url, "offline");
           setStatuses((prev) => {
@@ -112,6 +108,8 @@ export function useAccessibilityCheck(links: string[]) {
             return next;
           });
         }
+      } finally {
+        controller.signal.removeEventListener("abort", onParentAbort);
       }
     };
 
@@ -120,8 +118,11 @@ export function useAccessibilityCheck(links: string[]) {
         if (controller.signal.aborted) break;
         const batch = links.slice(i, i + BATCH_SIZE);
         await Promise.allSettled(batch.map(checkLink));
+        // Throttle: 500ms delay between batches to reduce RAM/CPU pressure
+        if (!controller.signal.aborted && i + BATCH_SIZE < links.length) {
+          await new Promise(r => setTimeout(r, 500));
+        }
       }
-      // Save to cache when done
       if (!controller.signal.aborted) {
         saveCache(results);
       }
