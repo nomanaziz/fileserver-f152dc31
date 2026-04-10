@@ -40,6 +40,20 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
+  const { data: savedBdixLinks, refetch: refetchBdixLinks } = useQuery({
+    queryKey: ["saved-bdix-links", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_saved_bdix_links")
+        .select("*")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const { data: payments } = useQuery({
     queryKey: ["payments", user?.id],
     queryFn: async () => {
