@@ -172,7 +172,7 @@ export default function BdixServers() {
             )}
             {!isFromCache && checkedCount < totalCount && (
               <span className="flex items-center gap-1.5">
-                <Loader2 className="h-3 w-3 animate-spin" /> চেক হচ্ছে... ({checkedCount}/{totalCount})
+                <Loader2 className="h-3 w-3 animate-spin" /> {totalCount}টি লিংক চেক হচ্ছে ({servers.length} সার্ভারে) — {checkedCount}/{totalCount}
               </span>
             )}
           </div>
