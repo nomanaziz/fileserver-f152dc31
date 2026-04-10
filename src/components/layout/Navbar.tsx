@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   Search, Menu, User, LogOut, Heart, Download, Shield, Command,
   ShoppingCart, Home, Crown, ChevronDown, ExternalLink, Server, Store,
+  icons,
 } from "lucide-react";
 import defaultLogo from "@/assets/fileserver-white-logo.png";
 import { Button } from "@/components/ui/button";
@@ -73,7 +74,7 @@ export default function Navbar() {
         .is("parent_id", null)
         .order("sort_order");
       // Filter out items that duplicate category links, Home, Pricing, Live TV (already rendered)
-      const skipUrls = new Set(["/", "/pricing", "/bdix-servers"]);
+      const skipUrls = new Set(["/", "/pricing", "/bdix-servers", "/live-tv"]);
       return (data || []).filter(item => {
         if (skipUrls.has(item.url)) return false;
         if (item.url.startsWith("/category/")) return false;
@@ -85,6 +86,13 @@ export default function Navbar() {
 
   const topCategories = categories?.filter(c => !c.parent_id) || [];
   const getChildren = (parentId: string) => categories?.filter(c => c.parent_id === parentId) || [];
+
+  const getCatIcon = (iconName?: string | null) => {
+    if (!iconName) return null;
+    const pascalName = iconName.split("-").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join("");
+    const IconComp = (icons as any)[pascalName];
+    return IconComp ? <IconComp className="h-4 w-4" /> : null;
+  };
 
   const logoUrl = siteSettings?.site_logo || defaultLogo;
 
@@ -228,6 +236,7 @@ export default function Navbar() {
                             : "text-muted-foreground hover:bg-primary/10 hover:text-primary"
                         }`}
                       >
+                        {getCatIcon(cat.icon)}
                         <span>{cat.name}</span>
                         <ChevronDown className="h-3 w-3" />
                       </button>
@@ -261,6 +270,7 @@ export default function Navbar() {
                     isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
+                  {getCatIcon(cat.icon)}
                   <span>{cat.name}</span>
                 </Link>
               );
@@ -353,6 +363,7 @@ export default function Navbar() {
                       isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                   >
+                    {getCatIcon(cat.icon)}
                     <span className="flex-1 text-left">{cat.name}</span>
                     {children.length > 0 && (
                       <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
