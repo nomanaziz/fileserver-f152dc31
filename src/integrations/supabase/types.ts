@@ -1300,6 +1300,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_saved_bdix_links: {
+        Row: {
+          id: string
+          links: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          links?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          links?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vendor_earnings: {
         Row: {
           commission_amount: number
