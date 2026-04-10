@@ -305,7 +305,7 @@ export default function BdixServers() {
                               </AccordionTrigger>
                               <AccordionContent className="px-4 pb-3">
                                 <div className="space-y-1.5">
-                                  {server.links.map((link, i) => {
+                                  {getFilteredLinks(server.links).map((link, i) => {
                                     const status = linkStatuses.get(link);
                                     const shortUrl = link
                                       .replace(/^https?:\/\//, "")
