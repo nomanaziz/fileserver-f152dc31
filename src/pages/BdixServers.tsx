@@ -167,6 +167,7 @@ export default function BdixServers() {
 
   // Count online/total
   const onlineCount = Array.from(linkStatuses.values()).filter((s) => s === "online").length;
+  const offlineCount = Array.from(linkStatuses.values()).filter((s) => s === "offline").length;
   const checkedCount = Array.from(linkStatuses.values()).filter((s) => s !== "checking").length;
   const totalCount = allLinks.length;
 
