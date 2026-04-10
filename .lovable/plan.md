@@ -1,64 +1,60 @@
 
 
-# BD IX Server List — রিডিজাইন, লাইভ অ্যাক্সেসিবিলিটি চেক, Facebook লিংক রিমুভ
+# BD IX Server List — ক্যাশিং, সেভ ফিচার ও সর্টিং
+
+## সমস্যা
+- প্রতিবার পেজ লোডে 250+ লিংক চেক হচ্ছে — bandwidth ও CPU খরচ
+- সার্ভারগুলো random order-এ আছে, alphabetical না
 
 ## কী করব
 
-### ১. ডিজাইন পরিবর্তন — রেফারেন্স সাইটের মতো গ্রিড লেআউট
-বর্তমান ডিজাইনে প্রতিটি সার্ভারের সব লিংক একসাথে দেখায়। নতুন ডিজাইনে:
-- **3-কলাম গ্রিড** (মোবাইলে 1, ট্যাবলেটে 2, ডেস্কটপে 3)
-- প্রতিটি সার্ভার একটি কার্ড — বাম দিকে আইকন, মাঝে সার্ভারের নাম (bold) + প্রথম লিংক (subtitle হিসেবে), ডানে chevron arrow
-- কার্ডে ক্লিক করলে expand হয়ে সব লিংক দেখাবে (accordion style)
-- প্রতিটি ক্যাটাগরির জন্য আলাদা আইকন ও color accent
+### ১. localStorage ক্যাশিং (সবার জন্য)
+- `useAccessibilityCheck` hook-এ চেকের রেজাল্ট `localStorage`-এ সেভ করব (key: `bdix-link-statuses`)
+- ক্যাশ expiry: **24 ঘণ্টা** — 24 ঘণ্টার মধ্যে আবার পেজে আসলে আর চেক করবে না, ক্যাশ থেকে দেখাবে
+- একটা "Re-check" বাটন থাকবে যাতে ইউজার চাইলে ম্যানুয়ালি আবার চেক করতে পারে (ক্যাশ ক্লিয়ার করে)
 
-### ২. লাইভ অ্যাক্সেসিবিলিটি চেক
-- প্রতিটি লিংকের পাশে ছোট ডট (green/red/gray)
-- পেজ লোডের পর ব্যাকগ্রাউন্ডে `fetch(url, { mode: 'no-cors', signal: AbortController })` দিয়ে চেক করব
-- সফল হলে green ডট, ব্যর্থ হলে red ডট, চেক চলছে = gray spinning
-- **সীমাবদ্ধতা**: CORS-এর কারণে অনেক সার্ভার `no-cors` mode-এ শুধু "opaque" response দেবে — এটা "reachable" হিসেবে গণ্য হবে। সত্যিকার unreachable হলে fetch reject হবে = red
-- একসাথে সব চেক না করে batch-এ (5টি করে) চালাবো যাতে ব্রাউজার hang না করে
-- Custom hook: `useAccessibilityCheck(links)` — returns `Map<string, 'checking' | 'online' | 'offline'>`
+### ২. Logged-in ইউজারদের জন্য "Save Accessible Links"
+- পেজে একটা বাটন: **"Save My Accessible Links"** — ক্লিক করলে যেসব লিংক green (online), সেগুলো ইউজারের প্রোফাইলে সেভ হবে
+- নতুন টেবিল `user_saved_bdix_links` — `user_id`, `links` (text[]), `updated_at`
+- Dashboard/Account পেজে সেভ করা লিংকগুলো দেখা যাবে
+- সেভ করা থাকলে পরবর্তীতে সেই লিংকগুলো সরাসরি green দেখাবে, আবার চেক করবে না
 
-### ৩. Facebook লিংক রিমুভ (Database Migration)
-- Migration-এ SQL দিয়ে `bdix_servers` টেবিলের সব row-এর `links` array থেকে facebook.com যুক্ত entry গুলো বাদ দেওয়া হবে:
-```sql
-UPDATE bdix_servers
-SET links = array_remove_facebook(links)
--- using array manipulation to filter out facebook URLs
-```
-
-### ৪. ক্যাটাগরি আইকন
-| Category | আইকন |
-|---|---|
-| Media & FTP | `HardDrive` (স্টোরেজ বোঝাতে) |
-| Live TV | `Tv` |
-| Speed Test | `Gauge` |
+### ৩. Alphanumeric সর্টিং
+- সার্ভারগুলো `sort_order` দিয়ে সর্ট হচ্ছে — এটা বদলে `name` দিয়ে alphabetical (Bangla/English mixed) সর্ট করব
+- Supabase query-তে `.order("name")` ব্যবহার করব
 
 ## ফাইল পরিবর্তন
 
 | ফাইল | কাজ |
 |---|---|
-| `src/pages/BdixServers.tsx` | সম্পূর্ণ রিডিজাইন — গ্রিড কার্ড + accessibility চেক |
-| `src/hooks/useAccessibilityCheck.ts` | নতুন — লিংক reachable কিনা ব্রাউজার থেকে চেক |
-| Migration SQL | Facebook লিংক সব সার্ভার থেকে রিমুভ |
+| `src/hooks/useAccessibilityCheck.ts` | localStorage ক্যাশিং যোগ, 24hr expiry, re-check ফাংশন expose |
+| `src/pages/BdixServers.tsx` | Re-check বাটন, Save Accessible Links বাটন, name দিয়ে সর্ট |
+| Migration SQL | `user_saved_bdix_links` টেবিল + RLS policies |
 
 ## টেকনিক্যাল বিবরণ
 
-**Accessibility check hook**:
+**localStorage ক্যাশ ফরম্যাট:**
+```json
+{
+  "timestamp": 1712764800000,
+  "statuses": { "http://1.2.3.4": "online", "http://5.6.7.8": "offline" }
+}
 ```
-useAccessibilityCheck(links: string[]) → Map<string, status>
-```
-- `useEffect`-এ batch fetch চালাবে (5 concurrent)
-- `AbortController` দিয়ে 5 সেকেন্ড timeout
-- `mode: 'no-cors'` ব্যবহার করবে কারণ FTP/media সার্ভারে CORS header নেই
-- Component unmount হলে সব abort
 
-**Facebook link removal migration**:
+**Hook API পরিবর্তন:**
+```typescript
+useAccessibilityCheck(links) → { statuses, recheck, isFromCache }
+```
+
+**নতুন টেবিল:**
 ```sql
-UPDATE bdix_servers SET links = (
-  SELECT array_agg(link)
-  FROM unnest(links) AS link
-  WHERE link NOT LIKE '%facebook.com%'
+CREATE TABLE user_saved_bdix_links (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  links text[] NOT NULL DEFAULT '{}',
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(user_id)
 );
+-- RLS: users can manage own row only
 ```
 
