@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, Loader2, Copy, Check, Smartphone, ChevronDown } from "lucide-react";
+import { CreditCard, Loader2, Copy, Check, Smartphone, ChevronDown, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/hooks/useCart";
@@ -19,6 +21,8 @@ export default function CheckoutPage() {
   const [processing, setProcessing] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const [senderNumber, setSenderNumber] = useState("");
+  const [transactionId, setTransactionId] = useState("");
 
   const { data: paymentMethods, isLoading: methodsLoading } = useQuery({
     queryKey: ["active-payment-methods"],
@@ -45,6 +49,14 @@ export default function CheckoutPage() {
     queryKey: ["bkash-enabled"],
     queryFn: async () => {
       const { data } = await supabase.from("site_settings").select("value").eq("key", "bkash_enabled").maybeSingle();
+      return data?.value === "true";
+    },
+  });
+
+  const { data: rechargeServerEnabled } = useQuery({
+    queryKey: ["recharge-server-enabled"],
+    queryFn: async () => {
+      const { data } = await supabase.from("site_settings").select("value").eq("key", "recharge_server_enabled").maybeSingle();
       return data?.value === "true";
     },
   });
@@ -156,8 +168,57 @@ export default function CheckoutPage() {
     }
   };
 
+  const handleRechargeServer = async () => {
+    if (!cartItems || cartItems.length === 0) return;
+    setProcessing(true);
+    try {
+      const firstProduct = cartItems[0]?.products as any;
+      const { data: payment, error: payErr } = await supabase
+        .from("payments")
+        .insert({
+          user_id: user.id,
+          product_id: cartItems.length === 1 ? cartItems[0].product_id : null,
+          amount: total,
+          status: "pending",
+          payment_method: "recharge_server",
+          vendor_id: firstProduct?.vendor_id || null,
+        })
+        .select("id")
+        .single();
+      if (payErr) throw payErr;
+
+      const { data, error } = await supabase.functions.invoke("recharge-server-initiate", {
+        body: {
+          payment_id: payment.id,
+          amount: total,
+          product_id: cartItems.length === 1 ? cartItems[0].product_id : null,
+          vendor_id: firstProduct?.vendor_id || null,
+          redirect_url: window.location.origin + "/dashboard",
+        },
+      });
+
+      if (error) throw error;
+      if (data?.payment_url) {
+        for (const item of cartItems) {
+          await supabase.from("cart_items").delete().eq("id", item.id);
+        }
+        window.location.href = data.payment_url;
+      } else {
+        throw new Error("Payment URL not received");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "পেমেন্ট শুরু করা যায়নি");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleManualCheckout = async () => {
     if (!cartItems || cartItems.length === 0) return;
+    if (!senderNumber.trim() || !transactionId.trim()) {
+      toast.error("সেন্ডার নম্বর ও ট্রানজেকশন আইডি দিতে হবে");
+      return;
+    }
     setProcessing(true);
     try {
       for (const item of cartItems) {
@@ -168,7 +229,9 @@ export default function CheckoutPage() {
           amount: product?.price || 0,
           status: "pending",
           payment_method: selectedMethod || "manual",
+          transaction_id: transactionId.trim(),
           vendor_id: product?.vendor_id || null,
+          gateway_response: { sender_number: senderNumber.trim(), transaction_id: transactionId.trim() },
         });
         if (error) throw error;
       }
@@ -238,6 +301,20 @@ export default function CheckoutPage() {
                 )}
               </Button>
             )}
+
+            {rechargeServerEnabled && (
+              <Button
+                className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={handleRechargeServer}
+                disabled={processing || !cartItems?.length}
+              >
+                {processing ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> প্রসেসিং...</>
+                ) : (
+                  <><Globe className="h-4 w-4 mr-2" /> Recharge Server দিয়ে পে করুন — ৳{total}</>
+                )}
+              </Button>
+            )}
           </div>
 
           {/* Manual Payment Methods — Radio-style collapsed/expanded */}
@@ -246,7 +323,7 @@ export default function CheckoutPage() {
           ) : paymentMethods && paymentMethods.length > 0 ? (
             <Card>
               <CardContent className="p-5">
-                <h3 className="font-semibold mb-4 text-sm">পেমেন্ট মেথড সিলেক্ট করুন</h3>
+                <h3 className="font-semibold mb-4 text-sm">ম্যানুয়াল পেমেন্ট মেথড সিলেক্ট করুন</h3>
                 <RadioGroup
                   value={selectedMethod || ""}
                   onValueChange={(val) => setSelectedMethod(val)}
@@ -263,7 +340,6 @@ export default function CheckoutPage() {
                             : "border-border hover:border-primary/30"
                         }`}
                       >
-                        {/* Header — always visible */}
                         <label
                           htmlFor={`pm-${pm.id}`}
                           className="flex items-center gap-3 p-3 cursor-pointer"
@@ -292,7 +368,6 @@ export default function CheckoutPage() {
                           />
                         </label>
 
-                        {/* Expanded details — only when selected */}
                         {isSelected && (
                           <div className="px-4 pb-4 pt-1 space-y-3 border-t border-border/50">
                             {pm.account_number && (
@@ -329,10 +404,28 @@ export default function CheckoutPage() {
                               </p>
                             )}
 
+                            {/* Sender Number & Transaction ID */}
+                            <div className="space-y-2">
+                              <Label className="text-xs">সেন্ডার নম্বর (যে নম্বর থেকে পাঠিয়েছেন)</Label>
+                              <Input
+                                value={senderNumber}
+                                onChange={(e) => setSenderNumber(e.target.value)}
+                                placeholder="01XXXXXXXXX"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs">ট্রানজেকশন আইডি</Label>
+                              <Input
+                                value={transactionId}
+                                onChange={(e) => setTransactionId(e.target.value)}
+                                placeholder="TRX123456789"
+                              />
+                            </div>
+
                             <Button
                               className="w-full h-10 mt-2"
                               onClick={handleManualCheckout}
-                              disabled={processing || !cartItems?.length}
+                              disabled={processing || !cartItems?.length || !senderNumber.trim() || !transactionId.trim()}
                             >
                               {processing ? (
                                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> প্রসেসিং...</>
@@ -348,7 +441,7 @@ export default function CheckoutPage() {
                 </RadioGroup>
               </CardContent>
             </Card>
-          ) : !bkashEnabled && !paystationEnabled ? (
+          ) : !bkashEnabled && !paystationEnabled && !rechargeServerEnabled ? (
             <p className="text-center text-muted-foreground text-sm">কোনো পেমেন্ট মেথড সক্রিয় নেই।</p>
           ) : null}
         </div>
