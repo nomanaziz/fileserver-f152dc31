@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   Search, Menu, User, LogOut, Heart, Download, Shield, Command,
   ShoppingCart, Home, Crown, ChevronDown, ExternalLink, Server, Store,
+  icons,
 } from "lucide-react";
 import defaultLogo from "@/assets/fileserver-white-logo.png";
 import { Button } from "@/components/ui/button";
