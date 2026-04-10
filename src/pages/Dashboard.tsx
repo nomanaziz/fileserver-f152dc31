@@ -106,6 +106,7 @@ export default function Dashboard() {
             <TabsTrigger value="favorites"><Heart className="h-4 w-4 mr-1" /> ফেভারিট</TabsTrigger>
             <TabsTrigger value="downloads"><Download className="h-4 w-4 mr-1" /> ডাউনলোড</TabsTrigger>
             <TabsTrigger value="purchases"><ShoppingBag className="h-4 w-4 mr-1" /> পারচেজ</TabsTrigger>
+            <TabsTrigger value="bdix"><Server className="h-4 w-4 mr-1" /> BD IX</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile">
