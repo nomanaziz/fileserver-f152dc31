@@ -26,6 +26,9 @@ import VendorStore from "./pages/VendorStore";
 import FavoritesPage from "./pages/FavoritesPage";
 import CartPage from "./pages/CartPage";
 import Advertise from "./pages/Advertise";
+import BlogList from "./pages/BlogList";
+import BlogPost from "./pages/BlogPost";
+import Contact from "./pages/Contact";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -92,6 +95,9 @@ const App = () => (
             <Route path="/cart" element={<CartPage />} />
             <Route path="/advertise" element={<Advertise />} />
             <Route path="/bdix-servers" element={<BdixServers />} />
+            <Route path="/blog" element={<BlogList />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/contact" element={<Contact />} />
 
             <Route path="/vendor" element={<VendorLayout />}>
               <Route index element={<VendorDashboard />} />
