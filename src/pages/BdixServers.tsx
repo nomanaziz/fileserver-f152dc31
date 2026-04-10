@@ -187,7 +187,7 @@ export default function BdixServers() {
               <span className="h-2.5 w-2.5 rounded-full bg-green-500" /> Accessible ({onlineCount})
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Not Accessible
+              <span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Not Accessible ({offlineCount})
             </span>
             {isFromCache && (
               <span className="text-yellow-500">📦 ক্যাশ থেকে দেখাচ্ছে (24hr)</span>
