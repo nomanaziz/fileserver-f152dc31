@@ -51,6 +51,8 @@ import AdminBlog from "./pages/admin/AdminBlog";
 import AdminChat from "./pages/admin/AdminChat";
 import AdminLiveTV from "./pages/admin/AdminLiveTV";
 import AdminVendors from "./pages/admin/AdminVendors";
+import AdminBdixServers from "./pages/admin/AdminBdixServers";
+import BdixServers from "./pages/BdixServers";
 
 import VendorLayout from "./pages/vendor/VendorLayout";
 import VendorDashboard from "./pages/vendor/VendorDashboard";
@@ -89,6 +91,7 @@ const App = () => (
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/advertise" element={<Advertise />} />
+            <Route path="/bdix-servers" element={<BdixServers />} />
 
             <Route path="/vendor" element={<VendorLayout />}>
               <Route index element={<VendorDashboard />} />
@@ -122,6 +125,7 @@ const App = () => (
               <Route path="chat" element={<AdminChat />} />
               <Route path="live-tv" element={<AdminLiveTV />} />
               <Route path="vendors" element={<AdminVendors />} />
+              <Route path="bdix-servers" element={<AdminBdixServers />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
