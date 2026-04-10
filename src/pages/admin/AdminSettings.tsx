@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Save, CreditCard, Smartphone } from "lucide-react";
+import { Save, CreditCard, Smartphone, Globe } from "lucide-react";
 
 const settingFields = [
   { key: "site_name", label: "Site Name", placeholder: "File Server BD" },
@@ -35,7 +35,11 @@ const bkashFields = [
   { key: "bkash_password", label: "Password", placeholder: "আপনার bKash Password" },
 ];
 
-const allToggleKeys = ["paystation_enabled", "bkash_enabled", "bkash_sandbox"];
+const rechargeServerFields = [
+  { key: "recharge_server_brand_key", label: "Brand Key", placeholder: "আপনার Recharge Server Brand Key" },
+];
+
+const allToggleKeys = ["paystation_enabled", "bkash_enabled", "bkash_sandbox", "recharge_server_enabled"];
 
 export default function AdminSettings() {
   const qc = useQueryClient();
@@ -45,7 +49,7 @@ export default function AdminSettings() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const allFields = [...settingFields, ...paystationFields, ...bkashFields, ...allToggleKeys.map(k => ({ key: k }))];
+      const allFields = [...settingFields, ...paystationFields, ...bkashFields, ...rechargeServerFields, ...allToggleKeys.map(k => ({ key: k }))];
       for (const field of allFields) {
         const existing = settings?.find(s => s.key === field.key);
         if (existing) { await supabase.from("site_settings").update({ value: values[field.key] || null }).eq("id", existing.id); }
@@ -137,6 +141,39 @@ export default function AdminSettings() {
           <p className="text-xs text-muted-foreground">
             bKash Merchant credentials পেতে{" "}
             <a href="https://developer.bka.sh" target="_blank" rel="noopener" className="text-primary underline">developer.bka.sh</a> তে রেজিস্ট্রেশন করুন।
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-emerald-500/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5 text-emerald-500" /> Recharge Server পেমেন্ট গেটওয়ে</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-3 rounded-md bg-muted">
+            <div>
+              <p className="font-medium text-sm">Recharge Server সক্রিয় করুন</p>
+              <p className="text-xs text-muted-foreground">এটি চালু করলে চেকআউটে Recharge Server ব্যবহার হবে</p>
+            </div>
+            <Switch
+              checked={values.recharge_server_enabled === "true"}
+              onCheckedChange={(checked) => setValues({ ...values, recharge_server_enabled: checked ? "true" : "false" })}
+            />
+          </div>
+          {rechargeServerFields.map(field => (
+            <div key={field.key} className="space-y-2">
+              <Label>{field.label}</Label>
+              <Input
+                value={values[field.key] || ""}
+                onChange={e => setValues({ ...values, [field.key]: e.target.value })}
+                placeholder={field.placeholder}
+                type="password"
+              />
+            </div>
+          ))}
+          <p className="text-xs text-muted-foreground">
+            Recharge Server Brand Key পেতে{" "}
+            <a href="https://rechargeserver.com" target="_blank" rel="noopener" className="text-primary underline">rechargeserver.com</a> তে রেজিস্ট্রেশন করুন।
           </p>
         </CardContent>
       </Card>
