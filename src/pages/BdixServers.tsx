@@ -1,10 +1,12 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Accordion,
   AccordionContent,
@@ -19,8 +21,12 @@ import {
   Search,
   Globe,
   Loader2,
+  RefreshCw,
+  Save,
+  Check,
 } from "lucide-react";
 import { useAccessibilityCheck } from "@/hooks/useAccessibilityCheck";
+import { toast } from "sonner";
 
 const CATEGORIES = [
   {
@@ -70,6 +76,8 @@ function StatusDot({ status }: { status: "checking" | "online" | "offline" | und
 
 export default function BdixServers() {
   const [search, setSearch] = useState("");
+  const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
 
   const { data: servers = [], isLoading } = useQuery({
     queryKey: ["bdix-servers"],
@@ -78,19 +86,49 @@ export default function BdixServers() {
         .from("bdix_servers")
         .select("*")
         .eq("is_active", true)
-        .order("sort_order");
+        .order("name");
       if (error) throw error;
       return data as BdixServer[];
     },
   });
 
-  // Collect all unique links for accessibility check
   const allLinks = useMemo(
     () => [...new Set(servers.flatMap((s) => s.links))],
     [servers]
   );
 
-  const linkStatuses = useAccessibilityCheck(allLinks);
+  const { statuses: linkStatuses, recheck, isFromCache } = useAccessibilityCheck(allLinks);
+
+  const handleSaveAccessible = async () => {
+    if (!user) {
+      toast.error("সেভ করতে লগইন করুন");
+      return;
+    }
+    const onlineLinks = Array.from(linkStatuses.entries())
+      .filter(([, s]) => s === "online")
+      .map(([url]) => url);
+
+    if (onlineLinks.length === 0) {
+      toast.error("কোনো accessible লিংক পাওয়া যায়নি");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("user_saved_bdix_links")
+        .upsert(
+          { user_id: user.id, links: onlineLinks, updated_at: new Date().toISOString() },
+          { onConflict: "user_id" }
+        );
+      if (error) throw error;
+      toast.success(`${onlineLinks.length}টি accessible লিংক সেভ হয়েছে`);
+    } catch {
+      toast.error("সেভ করতে সমস্যা হয়েছে");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const filteredServers = search
     ? servers.filter(
@@ -106,6 +144,11 @@ export default function BdixServers() {
   const getCategoryMeta = (key: string) =>
     CATEGORIES.find((c) => c.key === key)!;
 
+  // Count online/total
+  const onlineCount = Array.from(linkStatuses.values()).filter((s) => s === "online").length;
+  const checkedCount = Array.from(linkStatuses.values()).filter((s) => s !== "checking").length;
+  const totalCount = allLinks.length;
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -117,27 +160,50 @@ export default function BdixServers() {
           <p className="text-muted-foreground">
             বাংলাদেশের BDIX কানেক্টেড মিডিয়া FTP, লাইভ TV ও স্পিড টেস্ট সার্ভারের সম্পূর্ণ তালিকা
           </p>
-          <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground flex-wrap">
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-green-500" /> Accessible
+              <span className="h-2.5 w-2.5 rounded-full bg-green-500" /> Accessible ({onlineCount})
             </span>
             <span className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Not Accessible
             </span>
-            <span className="flex items-center gap-1.5">
-              <Loader2 className="h-3 w-3 animate-spin" /> Checking...
-            </span>
+            {isFromCache && (
+              <span className="text-yellow-500">📦 ক্যাশ থেকে দেখাচ্ছে (24hr)</span>
+            )}
+            {!isFromCache && checkedCount < totalCount && (
+              <span className="flex items-center gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin" /> চেক হচ্ছে... ({checkedCount}/{totalCount})
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="সার্ভার খুঁজুন..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
+        <div className="flex gap-3 mb-6 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="সার্ভার খুঁজুন..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button variant="outline" size="sm" onClick={recheck} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Re-check
+          </Button>
+          {user && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSaveAccessible}
+              disabled={saving || checkedCount < totalCount}
+              className="gap-2"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save Accessible
+            </Button>
+          )}
         </div>
 
         {isLoading ? (
