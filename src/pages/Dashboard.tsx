@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Download, Heart, User, ShoppingBag, Crown } from "lucide-react";
+import { Download, Heart, User, ShoppingBag, Crown, Server, Trash2, ExternalLink } from "lucide-react";
 
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
@@ -40,6 +40,20 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
+  const { data: savedBdixLinks, refetch: refetchBdixLinks } = useQuery({
+    queryKey: ["saved-bdix-links", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_saved_bdix_links")
+        .select("*")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const { data: payments } = useQuery({
     queryKey: ["payments", user?.id],
     queryFn: async () => {
@@ -56,6 +70,19 @@ export default function Dashboard() {
 
   if (!loading && !user) return <Navigate to="/login" />;
   if (loading) return null;
+
+  const deleteSavedLinks = async () => {
+    if (!user) return;
+    const { error } = await supabase
+      .from("user_saved_bdix_links")
+      .delete()
+      .eq("user_id", user.id);
+    if (error) toast.error("মুছতে ব্যর্থ হয়েছে");
+    else {
+      toast.success("সেভ করা লিংক মুছে ফেলা হয়েছে");
+      refetchBdixLinks();
+    }
+  };
 
   const updateProfile = async () => {
     const { error } = await supabase
@@ -79,6 +106,7 @@ export default function Dashboard() {
             <TabsTrigger value="favorites"><Heart className="h-4 w-4 mr-1" /> ফেভারিট</TabsTrigger>
             <TabsTrigger value="downloads"><Download className="h-4 w-4 mr-1" /> ডাউনলোড</TabsTrigger>
             <TabsTrigger value="purchases"><ShoppingBag className="h-4 w-4 mr-1" /> পারচেজ</TabsTrigger>
+            <TabsTrigger value="bdix"><Server className="h-4 w-4 mr-1" /> BD IX</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile">
@@ -200,6 +228,51 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="bdix">
+            {savedBdixLinks && savedBdixLinks.links.length > 0 ? (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>সেভ করা BD IX লিংক</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {savedBdixLinks.links.length}টি লিংক — আপডেট: {new Date(savedBdixLinks.updated_at).toLocaleDateString("bn-BD")}
+                    </p>
+                  </div>
+                  <Button variant="destructive" size="sm" onClick={deleteSavedLinks}>
+                    <Trash2 className="h-4 w-4 mr-1" /> মুছে ফেলুন
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {savedBdixLinks.links.map((link: string) => (
+                      <a
+                        key={link}
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-2 rounded-md border hover:bg-accent text-sm truncate"
+                      >
+                        <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{link}</span>
+                      </a>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center space-y-4">
+                  <Server className="h-12 w-12 mx-auto text-muted-foreground" />
+                  <h3 className="font-semibold">কোনো সেভ করা লিংক নেই</h3>
+                  <p className="text-sm text-muted-foreground">BD IX সার্ভার লিস্ট থেকে accessible লিংক সেভ করুন।</p>
+                  <Button asChild>
+                    <Link to="/bdix-servers">BD IX সার্ভার দেখুন</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>
