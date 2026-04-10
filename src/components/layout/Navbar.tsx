@@ -238,6 +238,7 @@ export default function Navbar() {
                       >
                         {getCatIcon(cat.icon)}
                         <span>{cat.name}</span>
+                        <ChevronDown className="h-3 w-3" />
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-48 p-1" align="start">
