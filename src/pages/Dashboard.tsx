@@ -71,6 +71,19 @@ export default function Dashboard() {
   if (!loading && !user) return <Navigate to="/login" />;
   if (loading) return null;
 
+  const deleteSavedLinks = async () => {
+    if (!user) return;
+    const { error } = await supabase
+      .from("user_saved_bdix_links")
+      .delete()
+      .eq("user_id", user.id);
+    if (error) toast.error("মুছতে ব্যর্থ হয়েছে");
+    else {
+      toast.success("সেভ করা লিংক মুছে ফেলা হয়েছে");
+      refetchBdixLinks();
+    }
+  };
+
   const updateProfile = async () => {
     const { error } = await supabase
       .from("profiles")
