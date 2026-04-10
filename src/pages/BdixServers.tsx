@@ -78,6 +78,7 @@ function StatusDot({ status }: { status: "checking" | "online" | "offline" | und
 }
 
 export default function BdixServers() {
+  const [accessFilter, setAccessFilter] = useState<"all" | "online" | "offline">("all");
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const { user } = useAuth();
