@@ -1,30 +1,21 @@
 
 
-# BD IX — Accessibility Filter ও www লিংক রিমুভ
+# Not Accessible কাউন্ট দেখানো
 
-## ১. Accessibility Filter যোগ
-BD IX পেজে search bar-এর পাশে একটা Select/dropdown filter যোগ করব:
-- **All** (সব দেখাও) — default
-- **Accessible Only** (শুধু online)
-- **Inaccessible Only** (শুধু offline)
+## কাজ
+Line 168-এ `offlineCount` variable যোগ করব এবং line 189-এ "Not Accessible" এর পাশে কাউন্ট দেখাব।
 
-Filter কাজ করবে server level-এ — যদি একটা সার্ভারের কোনো লিংকই accessible না হয়, তাহলে "Accessible Only" তে সেই সার্ভার লুকাবে। আর accordion-এর ভেতরে individual লিংকগুলোও filter হবে।
+## পরিবর্তন — `src/pages/BdixServers.tsx`
 
-## ২. www লিংক রিমুভ (DB Migration)
-ডাটাবেসে ১২১টা www লিংক আছে। এগুলো থেকে www. সরিয়ে দিব। শুধু ১টা actual duplicate আছে (jagobd.com) — সেটাও handle হবে।
+1. Line 169 এর পর যোগ:
+   ```typescript
+   const offlineCount = Array.from(linkStatuses.values()).filter((s) => s === "offline").length;
+   ```
 
-**Migration SQL:**
-```sql
-UPDATE bdix_servers SET links = (
-  SELECT array_agg(DISTINCT regexp_replace(link, '(https?://)www\.', '\1'))
-  FROM unnest(links) AS link
-);
-```
+2. Line 189 পরিবর্তন:
+   ```
+   Not Accessible → Not Accessible ({offlineCount})
+   ```
 
-## ফাইল পরিবর্তন
-
-| ফাইল | কাজ |
-|---|---|
-| `src/pages/BdixServers.tsx` | Filter dropdown (All/Accessible/Inaccessible) যোগ, server ও link filtering logic |
-| Migration SQL | www. রিমুভ করে লিংক আপডেট |
+একটাই ফাইল, দুই লাইন পরিবর্তন।
 
