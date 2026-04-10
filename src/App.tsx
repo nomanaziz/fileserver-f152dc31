@@ -125,6 +125,7 @@ const App = () => (
               <Route path="chat" element={<AdminChat />} />
               <Route path="live-tv" element={<AdminLiveTV />} />
               <Route path="vendors" element={<AdminVendors />} />
+              <Route path="bdix-servers" element={<AdminBdixServers />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
