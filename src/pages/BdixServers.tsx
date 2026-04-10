@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -75,6 +78,7 @@ function StatusDot({ status }: { status: "checking" | "online" | "offline" | und
 }
 
 export default function BdixServers() {
+  const [accessFilter, setAccessFilter] = useState<"all" | "online" | "offline">("all");
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const { user } = useAuth();
@@ -130,16 +134,33 @@ export default function BdixServers() {
     }
   };
 
-  const filteredServers = search
-    ? servers.filter(
+  const filteredServers = useMemo(() => {
+    let result = servers;
+    // Text search
+    if (search) {
+      result = result.filter(
         (s) =>
           s.name.toLowerCase().includes(search.toLowerCase()) ||
           s.links.some((l) => l.toLowerCase().includes(search.toLowerCase()))
-      )
-    : servers;
+      );
+    }
+    // Accessibility filter
+    if (accessFilter !== "all") {
+      result = result.filter((s) =>
+        s.links.some((l) => linkStatuses.get(l) === accessFilter)
+      );
+    }
+    return result;
+  }, [servers, search, accessFilter, linkStatuses]);
 
   const getServersForCategory = (cat: string) =>
     filteredServers.filter((s) => s.category === cat);
+
+  // Filter links inside accordion based on accessFilter
+  const getFilteredLinks = (links: string[]) => {
+    if (accessFilter === "all") return links;
+    return links.filter((l) => linkStatuses.get(l) === accessFilter);
+  };
 
   const getCategoryMeta = (key: string) =>
     CATEGORIES.find((c) => c.key === key)!;
@@ -188,6 +209,16 @@ export default function BdixServers() {
               className="pl-10"
             />
           </div>
+          <Select value={accessFilter} onValueChange={(v) => setAccessFilter(v as "all" | "online" | "offline")}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">সব দেখান</SelectItem>
+              <SelectItem value="online">শুধু Accessible</SelectItem>
+              <SelectItem value="offline">শুধু Inaccessible</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="outline" size="sm" onClick={recheck} className="gap-2">
             <RefreshCw className="h-4 w-4" />
             Re-check
@@ -274,7 +305,7 @@ export default function BdixServers() {
                               </AccordionTrigger>
                               <AccordionContent className="px-4 pb-3">
                                 <div className="space-y-1.5">
-                                  {server.links.map((link, i) => {
+                                  {getFilteredLinks(server.links).map((link, i) => {
                                     const status = linkStatuses.get(link);
                                     const shortUrl = link
                                       .replace(/^https?:\/\//, "")
