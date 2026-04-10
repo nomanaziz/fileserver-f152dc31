@@ -1,21 +1,30 @@
 
 
-# Not Accessible কাউন্ট দেখানো
+# Admin BD IX — Accessibility Check ও Bulk Disable
 
-## কাজ
-Line 168-এ `offlineCount` variable যোগ করব এবং line 189-এ "Not Accessible" এর পাশে কাউন্ট দেখাব।
+## সমস্যা
+Admin পেজে সার্ভারগুলোর লিংক accessible কি না সেটা চেক করার কোনো উপায় নেই। Expired/dead সার্ভার manually খুঁজে disable করতে হয়।
 
-## পরিবর্তন — `src/pages/BdixServers.tsx`
+## কী করব
 
-1. Line 169 এর পর যোগ:
-   ```typescript
-   const offlineCount = Array.from(linkStatuses.values()).filter((s) => s === "offline").length;
-   ```
+### ১. Accessibility Check বাটন
+- "Check Links" বাটন যোগ — ক্লিক করলে `useAccessibilityCheck` হুক দিয়ে সব লিংক চেক করবে
+- প্রতিটা সার্ভারের পাশে status দেখাবে (green dot = accessible, red dot = inaccessible, spinner = checking)
+- Progress indicator: কতটা চেক হয়েছে
 
-2. Line 189 পরিবর্তন:
-   ```
-   Not Accessible → Not Accessible ({offlineCount})
-   ```
+### ২. Accessibility Filter
+- Filter dropdown: All / Accessible / Inaccessible
+- Inaccessible filter দিলে শুধু যেসব সার্ভারের সব লিংক offline সেগুলো দেখাবে
 
-একটাই ফাইল, দুই লাইন পরিবর্তন।
+### ৩. Bulk Disable বাটন
+- "Inaccessible সব Disable করুন" বাটন — filtered inaccessible সার্ভারগুলো একসাথে `is_active = false` করবে
+- Confirmation dialog দেখাবে কতটা disable হবে
+
+## ফাইল পরিবর্তন
+
+| ফাইল | কাজ |
+|---|---|
+| `src/pages/admin/AdminBdixServers.tsx` | useAccessibilityCheck হুক যোগ, accessibility filter, per-server status badge, bulk disable বাটন ও mutation |
+
+কোনো DB পরিবর্তন লাগবে না — `is_active` কলাম ও admin RLS আগেই আছে।
 
