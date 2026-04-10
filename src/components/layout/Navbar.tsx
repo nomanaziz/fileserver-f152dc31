@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import {
   Search, Menu, User, LogOut, Heart, Download, Shield, Command,
-  ShoppingCart, Home, Crown, ChevronDown, ExternalLink, Radio, Store,
+  ShoppingCart, Home, Crown, ChevronDown, ExternalLink, Server, Store,
 } from "lucide-react";
 import defaultLogo from "@/assets/fileserver-white-logo.png";
 import { Button } from "@/components/ui/button";
@@ -73,7 +73,7 @@ export default function Navbar() {
         .is("parent_id", null)
         .order("sort_order");
       // Filter out items that duplicate category links, Home, Pricing, Live TV (already rendered)
-      const skipUrls = new Set(["/", "/pricing", "/live-tv"]);
+      const skipUrls = new Set(["/", "/pricing", "/bdix-servers"]);
       return (data || []).filter(item => {
         if (skipUrls.has(item.url)) return false;
         if (item.url.startsWith("/category/")) return false;
@@ -94,8 +94,8 @@ export default function Navbar() {
       ? location.pathname.split("/category/")[1]
       : location.pathname === "/pricing"
         ? "pricing"
-        : location.pathname === "/live-tv"
-          ? "live-tv"
+        : location.pathname === "/bdix-servers"
+          ? "bdix-servers"
           : null;
 
   const handleSearch = (e: React.FormEvent) => {
@@ -277,13 +277,13 @@ export default function Navbar() {
             </Link>
 
             <Link
-              to="/live-tv"
+              to="/bdix-servers"
               className={`flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium whitespace-nowrap rounded-full transition-all duration-200 ${
-                activeSlug === "live-tv" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                activeSlug === "bdix-servers" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-primary/10 hover:text-primary"
               }`}
             >
-              <Radio className="h-4 w-4" />
-              <span>Live TV</span>
+              <Server className="h-4 w-4" />
+              <span>BD IX Servers</span>
             </Link>
 
             {headerMenuItems?.map(item => (
@@ -391,6 +391,16 @@ export default function Navbar() {
             >
               <Crown className="h-4 w-4" />
               Pricing
+            </button>
+
+            <button
+              onClick={() => navTo("/bdix-servers")}
+              className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                activeSlug === "bdix-servers" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              <Server className="h-4 w-4" />
+              BD IX Servers
             </button>
           </div>
 
