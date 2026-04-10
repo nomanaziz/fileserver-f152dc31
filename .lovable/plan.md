@@ -1,60 +1,49 @@
 
 
-# BD IX Server List — ক্যাশিং, সেভ ফিচার ও সর্টিং
+# BD IX — লিংক সংখ্যা সমস্যা ও RAM অপটিমাইজেশন
 
 ## সমস্যা
-- প্রতিবার পেজ লোডে 250+ লিংক চেক হচ্ছে — bandwidth ও CPU খরচ
-- সার্ভারগুলো random order-এ আছে, alphabetical না
+- ২৫৮টা সার্ভার, কিন্তু প্রতিটায় গড়ে ২+ লিংক → মোট ৫৪৯টা লিংক চেক হচ্ছে
+- ৫৪৯টা concurrent/batch fetch = RAM ও CPU চাপ
 
 ## কী করব
 
-### ১. localStorage ক্যাশিং (সবার জন্য)
-- `useAccessibilityCheck` hook-এ চেকের রেজাল্ট `localStorage`-এ সেভ করব (key: `bdix-link-statuses`)
-- ক্যাশ expiry: **24 ঘণ্টা** — 24 ঘণ্টার মধ্যে আবার পেজে আসলে আর চেক করবে না, ক্যাশ থেকে দেখাবে
-- একটা "Re-check" বাটন থাকবে যাতে ইউজার চাইলে ম্যানুয়ালি আবার চেক করতে পারে (ক্যাশ ক্লিয়ার করে)
+### ১. Batch size কমানো ও throttling
+- বর্তমান `BATCH_SIZE = 5` — এটা ঠিক আছে কিন্তু batch-এর মধ্যে delay যোগ করব (500ms per batch)
+- এতে একসাথে সব fetch queue-তে জমা হবে না
 
-### ২. Logged-in ইউজারদের জন্য "Save Accessible Links"
-- পেজে একটা বাটন: **"Save My Accessible Links"** — ক্লিক করলে যেসব লিংক green (online), সেগুলো ইউজারের প্রোফাইলে সেভ হবে
-- নতুন টেবিল `user_saved_bdix_links` — `user_id`, `links` (text[]), `updated_at`
-- Dashboard/Account পেজে সেভ করা লিংকগুলো দেখা যাবে
-- সেভ করা থাকলে পরবর্তীতে সেই লিংকগুলো সরাসরি green দেখাবে, আবার চেক করবে না
+### ২. AbortController cleanup উন্নত করা
+- প্রতিটা individual fetch-এর জন্য আলাদা `AbortController` আছে কিন্তু parent abort-এ cleanup ঠিকমতো হচ্ছে না
+- `clearTimeout` দুইবার কল হচ্ছে (redundant `timeoutId`) — এটা পরিষ্কার করব
 
-### ৩. Alphanumeric সর্টিং
-- সার্ভারগুলো `sort_order` দিয়ে সর্ট হচ্ছে — এটা বদলে `name` দিয়ে alphabetical (Bangla/English mixed) সর্ট করব
-- Supabase query-তে `.order("name")` ব্যবহার করব
+### ৩. ক্যাশ already আছে — ঠিকমতো কাজ করছে কিনা verify
+- ২৪ ঘণ্টার localStorage cache ইতোমধ্যে আছে — প্রথমবার ছাড়া আর চেক হওয়ার কথা না
+- Cache hit হলে ৫৪৯টা fetch একদমই হবে না
+
+### ৪. UI-তে সার্ভার vs লিংক সংখ্যা পরিষ্কার করা
+- ট্যাবে সার্ভার সংখ্যা দেখাচ্ছে (২০২, ৫২, ৪) — এটা ঠিক আছে
+- নিচের status bar-এ "চেক হচ্ছে... (X/554)" দেখাচ্ছে — এখানে লিখব "৫৪৯টা লিংক চেক হচ্ছে (২৫৮ সার্ভারে)"
 
 ## ফাইল পরিবর্তন
 
 | ফাইল | কাজ |
 |---|---|
-| `src/hooks/useAccessibilityCheck.ts` | localStorage ক্যাশিং যোগ, 24hr expiry, re-check ফাংশন expose |
-| `src/pages/BdixServers.tsx` | Re-check বাটন, Save Accessible Links বাটন, name দিয়ে সর্ট |
-| Migration SQL | `user_saved_bdix_links` টেবিল + RLS policies |
+| `src/hooks/useAccessibilityCheck.ts` | Batch delay যোগ, redundant timeout সরানো, memory leak fix |
+| `src/pages/BdixServers.tsx` | Status text-এ সার্ভার vs লিংক সংখ্যা পরিষ্কার |
 
 ## টেকনিক্যাল বিবরণ
 
-**localStorage ক্যাশ ফরম্যাট:**
-```json
-{
-  "timestamp": 1712764800000,
-  "statuses": { "http://1.2.3.4": "online", "http://5.6.7.8": "offline" }
+**Batch delay:**
+```typescript
+// প্রতি batch-এর পর 500ms wait
+for (let i = 0; i < links.length; i += BATCH_SIZE) {
+  const batch = links.slice(i, i + BATCH_SIZE);
+  await Promise.allSettled(batch.map(checkLink));
+  if (i + BATCH_SIZE < links.length) {
+    await new Promise(r => setTimeout(r, 500));
+  }
 }
 ```
 
-**Hook API পরিবর্তন:**
-```typescript
-useAccessibilityCheck(links) → { statuses, recheck, isFromCache }
-```
-
-**নতুন টেবিল:**
-```sql
-CREATE TABLE user_saved_bdix_links (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  links text[] NOT NULL DEFAULT '{}',
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(user_id)
-);
--- RLS: users can manage own row only
-```
+**Redundant code cleanup** — `checkLink` ফাংশনে দুইটা timeout আছে (`timeoutId` + `linkTimeout`), একটা রাখব।
 
