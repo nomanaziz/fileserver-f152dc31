@@ -35,6 +35,7 @@ const adminLinks = [
   { title: "Coupons", url: "/admin/coupons", icon: Tag },
   { title: "Servers", url: "/admin/servers", icon: Server },
   { title: "Scraping", url: "/admin/scraping", icon: Globe },
+  { title: "BD IX List", url: "/admin/bdix-servers", icon: Globe },
   { title: "Ads", url: "/admin/ads", icon: Image },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
   { title: "Activity Log", url: "/admin/activity", icon: Activity },

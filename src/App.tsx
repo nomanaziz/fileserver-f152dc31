@@ -51,6 +51,8 @@ import AdminBlog from "./pages/admin/AdminBlog";
 import AdminChat from "./pages/admin/AdminChat";
 import AdminLiveTV from "./pages/admin/AdminLiveTV";
 import AdminVendors from "./pages/admin/AdminVendors";
+import AdminBdixServers from "./pages/admin/AdminBdixServers";
+import BdixServers from "./pages/BdixServers";
 
 import VendorLayout from "./pages/vendor/VendorLayout";
 import VendorDashboard from "./pages/vendor/VendorDashboard";

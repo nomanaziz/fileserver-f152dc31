@@ -59,10 +59,11 @@ export default function AdminBdixServers() {
   const upsertMutation = useMutation({
     mutationFn: async (server: Partial<BdixServer> & { id?: string }) => {
       if (server.id) {
-        const { error } = await supabase.from("bdix_servers").update(server).eq("id", server.id);
+        const { id, ...rest } = server;
+        const { error } = await supabase.from("bdix_servers").update(rest).eq("id", id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("bdix_servers").insert(server);
+        const { error } = await supabase.from("bdix_servers").insert([server]);
         if (error) throw error;
       }
     },
