@@ -229,6 +229,51 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="bdix">
+            {savedBdixLinks && savedBdixLinks.links.length > 0 ? (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>সেভ করা BD IX লিংক</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {savedBdixLinks.links.length}টি লিংক — আপডেট: {new Date(savedBdixLinks.updated_at).toLocaleDateString("bn-BD")}
+                    </p>
+                  </div>
+                  <Button variant="destructive" size="sm" onClick={deleteSavedLinks}>
+                    <Trash2 className="h-4 w-4 mr-1" /> মুছে ফেলুন
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {savedBdixLinks.links.map((link: string) => (
+                      <a
+                        key={link}
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-2 rounded-md border hover:bg-accent text-sm truncate"
+                      >
+                        <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{link}</span>
+                      </a>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center space-y-4">
+                  <Server className="h-12 w-12 mx-auto text-muted-foreground" />
+                  <h3 className="font-semibold">কোনো সেভ করা লিংক নেই</h3>
+                  <p className="text-sm text-muted-foreground">BD IX সার্ভার লিস্ট থেকে accessible লিংক সেভ করুন।</p>
+                  <Button asChild>
+                    <Link to="/bdix-servers">BD IX সার্ভার দেখুন</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
     </Layout>
