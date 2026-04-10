@@ -209,6 +209,16 @@ export default function BdixServers() {
               className="pl-10"
             />
           </div>
+          <Select value={accessFilter} onValueChange={(v) => setAccessFilter(v as "all" | "online" | "offline")}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">সব দেখান</SelectItem>
+              <SelectItem value="online">শুধু Accessible</SelectItem>
+              <SelectItem value="offline">শুধু Inaccessible</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="outline" size="sm" onClick={recheck} className="gap-2">
             <RefreshCw className="h-4 w-4" />
             Re-check
