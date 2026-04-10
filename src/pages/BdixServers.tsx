@@ -134,16 +134,33 @@ export default function BdixServers() {
     }
   };
 
-  const filteredServers = search
-    ? servers.filter(
+  const filteredServers = useMemo(() => {
+    let result = servers;
+    // Text search
+    if (search) {
+      result = result.filter(
         (s) =>
           s.name.toLowerCase().includes(search.toLowerCase()) ||
           s.links.some((l) => l.toLowerCase().includes(search.toLowerCase()))
-      )
-    : servers;
+      );
+    }
+    // Accessibility filter
+    if (accessFilter !== "all") {
+      result = result.filter((s) =>
+        s.links.some((l) => linkStatuses.get(l) === accessFilter)
+      );
+    }
+    return result;
+  }, [servers, search, accessFilter, linkStatuses]);
 
   const getServersForCategory = (cat: string) =>
     filteredServers.filter((s) => s.category === cat);
+
+  // Filter links inside accordion based on accessFilter
+  const getFilteredLinks = (links: string[]) => {
+    if (accessFilter === "all") return links;
+    return links.filter((l) => linkStatuses.get(l) === accessFilter);
+  };
 
   const getCategoryMeta = (key: string) =>
     CATEGORIES.find((c) => c.key === key)!;
