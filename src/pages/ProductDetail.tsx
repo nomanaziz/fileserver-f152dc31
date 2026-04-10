@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Heart, ShoppingCart, ArrowLeft, Monitor, HardDrive, Calendar, Lock, Crown, Store } from "lucide-react";
+import VideoPlayer from "@/components/VideoPlayer";
+import TutorialPlaylist from "@/components/TutorialPlaylist";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -79,6 +81,9 @@ export default function ProductDetail() {
 
   const isFree = !product.is_paid;
   const canAccess = isFree || hasPurchased || (hasSubscription && canDownload);
+  const isMovie = product.content_type === "movie";
+  const isTutorial = product.content_type === "tutorial";
+  const isVideo = isMovie || isTutorial;
 
   return (
     <Layout>
@@ -89,16 +94,28 @@ export default function ProductDetail() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8">
           <div className="space-y-6">
-            {/* Thumbnail */}
-            <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-              {product.thumbnail_url ? (
-                <img src={product.thumbnail_url} alt={product.title} className="w-full h-full object-cover" />
+            {/* Video Player / Thumbnail */}
+            {isVideo && canAccess && downloads && downloads.length > 0 ? (
+              isTutorial ? (
+                <TutorialPlaylist downloads={downloads} title={product.title} />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                  <Download className="h-16 w-16" />
-                </div>
-              )}
-            </div>
+                <VideoPlayer
+                  downloads={downloads}
+                  thumbnailUrl={product.thumbnail_url}
+                  title={product.title}
+                />
+              )
+            ) : (
+              <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                {product.thumbnail_url ? (
+                  <img src={product.thumbnail_url} alt={product.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                    <Download className="h-16 w-16" />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Screenshots */}
             {product.screenshots && product.screenshots.length > 0 && (
