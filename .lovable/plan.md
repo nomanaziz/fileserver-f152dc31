@@ -1,27 +1,30 @@
 
 
-# ড্যাশবোর্ডে "সেভ করা BD IX লিংক" ট্যাব যোগ
+# BD IX — Accessibility Filter ও www লিংক রিমুভ
 
-## সমস্যা
-ইউজার BD IX পেজ থেকে accessible লিংক সেভ করেছে `user_saved_bdix_links` টেবিলে, কিন্তু ড্যাশবোর্ডে এটা দেখার কোনো জায়গা নেই।
+## ১. Accessibility Filter যোগ
+BD IX পেজে search bar-এর পাশে একটা Select/dropdown filter যোগ করব:
+- **All** (সব দেখাও) — default
+- **Accessible Only** (শুধু online)
+- **Inaccessible Only** (শুধু offline)
 
-## কী করব
+Filter কাজ করবে server level-এ — যদি একটা সার্ভারের কোনো লিংকই accessible না হয়, তাহলে "Accessible Only" তে সেই সার্ভার লুকাবে। আর accordion-এর ভেতরে individual লিংকগুলোও filter হবে।
 
-### `src/pages/Dashboard.tsx` — নতুন "BD IX" ট্যাব যোগ
+## ২. www লিংক রিমুভ (DB Migration)
+ডাটাবেসে ১২১টা www লিংক আছে। এগুলো থেকে www. সরিয়ে দিব। শুধু ১টা actual duplicate আছে (jagobd.com) — সেটাও handle হবে।
 
-1. `useQuery` দিয়ে `user_saved_bdix_links` থেকে ইউজারের সেভ করা লিংক fetch
-2. TabsList-এ নতুন ট্যাব: **"BD IX"** with `Server` icon
-3. TabsContent-এ:
-   - সেভ করা লিংকগুলোর লিস্ট (clickable, external link)
-   - কবে সেভ হয়েছে (`updated_at`) তারিখ দেখানো
-   - লিংক না থাকলে empty state — "কোনো সেভ করা লিংক নেই" + BD IX পেজে যাওয়ার বাটন
-   - "মুছে ফেলুন" বাটন — সেভ করা লিংক ডিলিট করার অপশন
+**Migration SQL:**
+```sql
+UPDATE bdix_servers SET links = (
+  SELECT array_agg(DISTINCT regexp_replace(link, '(https?://)www\.', '\1'))
+  FROM unnest(links) AS link
+);
+```
 
 ## ফাইল পরিবর্তন
 
 | ফাইল | কাজ |
 |---|---|
-| `src/pages/Dashboard.tsx` | নতুন BD IX ট্যাব + query + UI |
-
-কোনো DB পরিবর্তন লাগবে না — টেবিল ও RLS আগেই তৈরি আছে।
+| `src/pages/BdixServers.tsx` | Filter dropdown (All/Accessible/Inaccessible) যোগ, server ও link filtering logic |
+| Migration SQL | www. রিমুভ করে লিংক আপডেট |
 
