@@ -10,7 +10,7 @@ export function useAdsForPlacement(placement: AdPlacement) {
       const now = new Date().toISOString();
       const { data, error } = await supabase
         .from("ads")
-        .select("*")
+        .select("id, title, image_url, link_url, content, ad_type, ad_source, placement, position, device_target, priority, starts_at, ends_at, impressions, clicks")
         .eq("is_active", true)
         .eq("placement", placement)
         .or(`starts_at.is.null,starts_at.lte.${now}`)
