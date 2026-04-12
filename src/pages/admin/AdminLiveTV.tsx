@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import ImageUploadField from "@/components/ImageUploadField";
 
 export default function AdminLiveTV() {
   const qc = useQueryClient();
@@ -60,7 +61,7 @@ export default function AdminLiveTV() {
                 <div className="space-y-2"><Label>Name</Label><Input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></div>
                 <div className="space-y-2"><Label>Stream URL</Label><Input value={editing.stream_url} onChange={(e) => setEditing({ ...editing, stream_url: e.target.value })} /></div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label>Thumbnail URL</Label><Input value={editing.thumbnail_url || ""} onChange={(e) => setEditing({ ...editing, thumbnail_url: e.target.value })} /></div>
+                  <ImageUploadField value={editing.thumbnail_url || ""} onChange={(url) => setEditing({ ...editing, thumbnail_url: url })} folder="livetv" label="থাম্বনেইল" />
                   <div className="space-y-2"><Label>Category</Label><Input value={editing.category || ""} onChange={(e) => setEditing({ ...editing, category: e.target.value })} /></div>
                 </div>
                 <div className="space-y-2"><Label>Sort Order</Label><Input type="number" value={editing.sort_order} onChange={(e) => setEditing({ ...editing, sort_order: e.target.value })} /></div>

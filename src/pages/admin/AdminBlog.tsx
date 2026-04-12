@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import ImageUploadField from "@/components/ImageUploadField";
 
 export default function AdminBlog() {
   const qc = useQueryClient();
@@ -66,7 +67,7 @@ export default function AdminBlog() {
                 </div>
                 <div className="space-y-2"><Label>Excerpt</Label><Textarea value={editing.excerpt || ""} onChange={(e) => setEditing({ ...editing, excerpt: e.target.value })} rows={2} /></div>
                 <div className="space-y-2"><Label>Content (HTML)</Label><Textarea value={editing.content || ""} onChange={(e) => setEditing({ ...editing, content: e.target.value })} rows={10} /></div>
-                <div className="space-y-2"><Label>Thumbnail URL</Label><Input value={editing.thumbnail_url || ""} onChange={(e) => setEditing({ ...editing, thumbnail_url: e.target.value })} /></div>
+                <ImageUploadField value={editing.thumbnail_url || ""} onChange={(url) => setEditing({ ...editing, thumbnail_url: url })} folder="blog" label="থাম্বনেইল" />
                 <label className="flex items-center gap-2"><input type="checkbox" checked={editing.is_published} onChange={(e) => setEditing({ ...editing, is_published: e.target.checked })} /> Published</label>
                 <Button onClick={() => save.mutate(editing)} className="w-full">Save</Button>
               </div>

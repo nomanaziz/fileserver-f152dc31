@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 import { Plus, Edit, Trash2, ArrowUpDown, Search, Download, ShieldCheck, X, Image, Star, TrendingUp } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
+import ImageUploadField from "@/components/ImageUploadField";
 
 type SortKey = "title" | "download_count" | "created_at" | "price";
 type SortDir = "asc" | "desc";
@@ -176,8 +177,8 @@ export default function AdminProducts() {
               </div>
               <div className="space-y-2"><Label>Description</Label><Textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Product Image URL</Label><Input value={imageUrl} onChange={e => setImageUrl(e.target.value)} />{imageUrl && <img src={imageUrl} alt="" className="h-20 rounded-md border object-cover" />}</div>
-                <div className="space-y-2"><Label>Thumbnail Icon URL</Label><Input value={thumbnailIcon} onChange={e => setThumbnailIcon(e.target.value)} />{thumbnailIcon && <img src={thumbnailIcon} alt="" className="h-10 rounded border object-cover" />}</div>
+                <ImageUploadField value={imageUrl} onChange={setImageUrl} folder="products" label="প্রোডাক্ট ইমেজ" />
+                <ImageUploadField value={thumbnailIcon} onChange={setThumbnailIcon} folder="products/icons" label="থাম্বনেইল আইকন" maxWidth={200} />
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2"><Label>Category</Label><Select value={categoryId || "none"} onValueChange={v => setCategoryId(v === "none" ? "" : v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">— None —</SelectItem>{categories?.map(c => <SelectItem key={c.id} value={c.id}>{c.parent_id ? "  └ " : ""}{c.name}</SelectItem>)}</SelectContent></Select></div>
@@ -207,8 +208,8 @@ export default function AdminProducts() {
                 <div className="flex items-center gap-2"><Switch checked={isTrending} onCheckedChange={setIsTrending} /><Label className="flex items-center gap-1"><TrendingUp className="h-4 w-4" /> Trending</Label></div>
               </div>
               <div className="space-y-2">
-                <Label className="flex items-center gap-1"><Image className="h-4 w-4" /> Gallery</Label>
-                <div className="flex gap-2"><Input value={newScreenshot} onChange={e => setNewScreenshot(e.target.value)} placeholder="Image URL" className="flex-1" /><Button type="button" variant="outline" size="sm" onClick={addScreenshot}>Add</Button></div>
+                <Label className="flex items-center gap-1"><Image className="h-4 w-4" /> গ্যালারি</Label>
+                <ImageUploadField value="" onChange={(url) => { if (url) setScreenshots([...screenshots, url]); }} folder="products/gallery" label="" />
                 {screenshots.length > 0 && <div className="grid grid-cols-4 gap-2 mt-2">{screenshots.map((s, i) => <div key={i} className="relative group"><img src={s} alt="" className="rounded-md border aspect-video object-cover w-full" /><button onClick={() => removeScreenshot(i)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"><X className="h-3 w-3" /></button></div>)}</div>}
               </div>
               <div className="space-y-2">
