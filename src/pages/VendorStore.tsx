@@ -29,7 +29,7 @@ export default function VendorStore() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, categories(name, slug)")
+        .select("*, categories!products_category_id_fkey(name, slug)")
         .eq("vendor_id", id!)
         .eq("is_vendor_product", true)
         .eq("vendor_status", "approved")

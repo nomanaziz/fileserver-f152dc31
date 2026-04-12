@@ -139,7 +139,7 @@ export default function AdminVendors() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, categories(name), vendor_profiles!products_vendor_id_fkey(store_name)")
+        .select("*, categories!products_category_id_fkey(name), vendor_profiles!products_vendor_id_fkey(store_name)")
         .eq("is_vendor_product", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
