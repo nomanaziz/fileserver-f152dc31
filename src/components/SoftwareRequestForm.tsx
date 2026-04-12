@@ -17,6 +17,24 @@ export default function SoftwareRequestForm() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Check pending request count for limit
+  const { data: pendingCount } = useQuery({
+    queryKey: ["my-pending-request-count", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("software_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user!.id)
+        .eq("status", "pending");
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  const MAX_PENDING = 5;
+  const limitReached = (pendingCount || 0) >= MAX_PENDING;
+
   const { data: requests } = useQuery({
     queryKey: ["software-requests-recent"],
     queryFn: async () => {
@@ -79,6 +97,7 @@ export default function SoftwareRequestForm() {
       setTitle("");
       setDescription("");
       queryClient.invalidateQueries({ queryKey: ["software-requests-recent"] });
+      queryClient.invalidateQueries({ queryKey: ["my-pending-request-count"] });
     }
   };
 
@@ -126,21 +145,28 @@ export default function SoftwareRequestForm() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-2 mb-4">
+          {limitReached && (
+            <p className="text-xs text-destructive bg-destructive/10 rounded p-2">
+              আপনার {MAX_PENDING}টি pending রিকোয়েস্ট আছে। আগে cancel করুন বা fulfilled হওয়া পর্যন্ত অপেক্ষা করুন।
+            </p>
+          )}
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="সফটওয়্যারের নাম..."
             className="h-8 text-sm"
+            disabled={limitReached}
           />
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="বিস্তারিত (ঐচ্ছিক)"
             className="text-sm min-h-[60px] resize-none"
+            disabled={limitReached}
           />
-          <Button type="submit" size="sm" className="w-full gap-1.5 text-xs" disabled={submitting || !title.trim()}>
+          <Button type="submit" size="sm" className="w-full gap-1.5 text-xs" disabled={submitting || !title.trim() || limitReached}>
             <Send className="h-3 w-3" />
-            {submitting ? "জমা হচ্ছে..." : "রিকোয়েস্ট জমা দিন"}
+            {submitting ? "জমা হচ্ছে..." : `রিকোয়েস্ট জমা দিন (${pendingCount || 0}/${MAX_PENDING})`}
           </Button>
         </form>
       )}
