@@ -19,6 +19,7 @@ import { useCategories } from "@/hooks/useCategories";
 import ImageUploadField from "@/components/ImageUploadField";
 import MultiCategorySelect from "@/components/MultiCategorySelect";
 import { CONTENT_TYPES, getFieldConfig } from "@/lib/contentTypeConfig";
+import ServerHealthStats from "@/components/ServerHealthStats";
 
 type SortKey = "title" | "download_count" | "created_at" | "price";
 type SortDir = "asc" | "desc";
