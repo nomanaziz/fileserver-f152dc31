@@ -22,7 +22,7 @@ export default function AdminAnalytics() {
   const { data: topCategories } = useQuery({
     queryKey: ["admin-analytics-categories"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("products").select("category_id, download_count, categories(name)");
+      const { data, error } = await supabase.from("products").select("category_id, download_count, categories!products_category_id_fkey(name)");
       if (error) throw error;
       const catMap: Record<string, { name: string; downloads: number }> = {};
       data?.forEach((p: any) => { const name = p.categories?.name || "Uncategorized"; if (!catMap[name]) catMap[name] = { name, downloads: 0 }; catMap[name].downloads += p.download_count; });

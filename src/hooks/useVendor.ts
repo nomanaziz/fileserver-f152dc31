@@ -40,7 +40,7 @@ export function useVendorProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, categories(name)")
+        .select("*, categories!products_category_id_fkey(name)")
         .eq("vendor_id", user!.id)
         .eq("is_vendor_product", true)
         .order("created_at", { ascending: false });

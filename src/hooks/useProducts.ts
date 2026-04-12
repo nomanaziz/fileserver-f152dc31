@@ -19,7 +19,7 @@ export function useProducts(filters?: { category_id?: string; category_ids?: str
         const productIds = [...new Set((pcRows || []).map(r => r.product_id))];
         if (productIds.length === 0) return [] as Product[];
 
-        let query = supabase.from("products").select("*, categories(name, slug, icon)").eq("status", "published").in("id", productIds);
+        let query = supabase.from("products").select("*, categories!products_category_id_fkey(name, slug, icon)").eq("status", "published").in("id", productIds);
         if (filters?.search) query = query.ilike("title", `%${filters.search}%`);
         if (filters?.featured) query = query.eq("is_featured", true);
         if (filters?.limit) query = query.limit(filters.limit);
@@ -37,7 +37,7 @@ export function useProducts(filters?: { category_id?: string; category_ids?: str
           .eq("category_id", filters.category_id);
         const junctionIds = (pcRows || []).map(r => r.product_id);
 
-        let query = supabase.from("products").select("*, categories(name, slug, icon)").eq("status", "published");
+        let query = supabase.from("products").select("*, categories!products_category_id_fkey(name, slug, icon)").eq("status", "published");
         if (junctionIds.length > 0) {
           // Products in junction OR with legacy category_id
           query = query.or(`category_id.eq.${filters.category_id},id.in.(${junctionIds.join(",")})`);
@@ -54,7 +54,7 @@ export function useProducts(filters?: { category_id?: string; category_ids?: str
       }
 
       // No category filter
-      let query = supabase.from("products").select("*, categories(name, slug, icon)").eq("status", "published");
+      let query = supabase.from("products").select("*, categories!products_category_id_fkey(name, slug, icon)").eq("status", "published");
       if (filters?.search) query = query.ilike("title", `%${filters.search}%`);
       if (filters?.featured) query = query.eq("is_featured", true);
       if (filters?.limit) query = query.limit(filters.limit);
@@ -73,7 +73,7 @@ export function useProductBySlug(slug: string | undefined) {
       if (!slug) return null;
       const { data, error } = await supabase
         .from("products")
-        .select("*, categories(name, slug, icon)")
+        .select("*, categories!products_category_id_fkey(name, slug, icon)")
         .eq("slug", slug)
         .single();
       if (error) throw error;
@@ -105,7 +105,7 @@ export function useFeaturedProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, categories(name, slug, icon)")
+        .select("*, categories!products_category_id_fkey(name, slug, icon)")
         .eq("status", "published")
         .order("download_count", { ascending: false })
         .limit(8);
@@ -121,7 +121,7 @@ export function useLatestProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, categories(name, slug, icon)")
+        .select("*, categories!products_category_id_fkey(name, slug, icon)")
         .eq("status", "published")
         .order("created_at", { ascending: false })
         .limit(12);

@@ -36,7 +36,7 @@ export function useRecommendedProducts(platform: DetectedPlatform) {
 
       const { data, error } = await supabase
         .from("products")
-        .select("*, categories(name, slug, icon)")
+        .select("*, categories!products_category_id_fkey(name, slug, icon)")
         .eq("status", "published")
         .in("category_id", matchingIds)
         .order("download_count", { ascending: false })
