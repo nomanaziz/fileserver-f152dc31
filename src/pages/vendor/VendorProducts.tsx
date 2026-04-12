@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2, Download, X } from "lucide-react";
+import ImageUploadField from "@/components/ImageUploadField";
 
 function slugify(text: string) { return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); }
 
@@ -128,7 +129,7 @@ export default function VendorProducts() {
                 <div className="space-y-2"><Label>স্লাগ</Label><Input value={slug} onChange={e => setSlug(e.target.value)} /></div>
               </div>
               <div className="space-y-2"><Label>বিবরণ</Label><Textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} /></div>
-              <div className="space-y-2"><Label>ইমেজ URL</Label><Input value={imageUrl} onChange={e => setImageUrl(e.target.value)} /></div>
+              <ImageUploadField value={imageUrl} onChange={setImageUrl} folder="vendor-products" label="প্রোডাক্ট ইমেজ" />
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>ক্যাটেগরি</Label>
@@ -157,7 +158,7 @@ export default function VendorProducts() {
               <div className="space-y-2"><Label>ট্যাগ (কমা দিয়ে)</Label><Input value={tags} onChange={e => setTags(e.target.value)} /></div>
               <div className="space-y-2">
                 <Label>স্ক্রিনশট</Label>
-                <div className="flex gap-2"><Input value={newScreenshot} onChange={e => setNewScreenshot(e.target.value)} placeholder="URL" className="flex-1" /><Button type="button" variant="outline" size="sm" onClick={() => { if (newScreenshot.trim()) { setScreenshots([...screenshots, newScreenshot.trim()]); setNewScreenshot(""); } }}>যোগ</Button></div>
+                <ImageUploadField value="" onChange={(url) => { if (url) setScreenshots([...screenshots, url]); }} folder="vendor-products/gallery" label="" />
                 {screenshots.length > 0 && <div className="grid grid-cols-3 gap-2 mt-2">{screenshots.map((s, i) => <div key={i} className="relative group"><img src={s} alt="" className="rounded-md border aspect-video object-cover w-full" /><button onClick={() => setScreenshots(screenshots.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"><X className="h-3 w-3" /></button></div>)}</div>}
               </div>
               <div className="space-y-2">

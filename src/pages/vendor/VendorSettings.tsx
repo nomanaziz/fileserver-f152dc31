@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import ImageUploadField from "@/components/ImageUploadField";
 
 export default function VendorSettings() {
   const { data: profile } = useVendorProfile();
@@ -40,7 +41,7 @@ export default function VendorSettings() {
         <CardContent className="space-y-4">
           <div className="space-y-2"><Label>স্টোরের নাম</Label><Input value={storeName} onChange={e => setStoreName(e.target.value)} /></div>
           <div className="space-y-2"><Label>বিবরণ</Label><Textarea value={storeDesc} onChange={e => setStoreDesc(e.target.value)} rows={3} /></div>
-          <div className="space-y-2"><Label>লোগো URL</Label><Input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} /></div>
+          <ImageUploadField value={logoUrl} onChange={setLogoUrl} bucket="vendor-logos" folder="logos" label="লোগো" maxWidth={200} />
           <Button onClick={handleSave} disabled={updateProfile.isPending}>
             {updateProfile.isPending ? "সেভ হচ্ছে..." : "সেভ করুন"}
           </Button>

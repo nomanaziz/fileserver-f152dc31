@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Upload, BarChart3 } from "lucide-react";
+import { Plus, Edit, Trash2, BarChart3 } from "lucide-react";
+import ImageUploadField from "@/components/ImageUploadField";
 
 const placements = ["header", "sidebar", "in_content", "footer", "before_download", "popup"];
 const adTypes = ["image", "html", "video"];
@@ -36,7 +37,7 @@ export default function AdminAds() {
   const [priority, setPriority] = useState(0);
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
-  const [uploading, setUploading] = useState(false);
+  
 
   const { data: ads } = useQuery({
     queryKey: ["admin-ads"],
@@ -64,23 +65,6 @@ export default function AdminAds() {
     return { ...slot, activeCount, available: slot.max_ads - activeCount };
   });
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    const ext = file.name.split(".").pop();
-    const path = `${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("ad-images").upload(path, file);
-    if (error) {
-      toast.error("আপলোড ব্যর্থ: " + error.message);
-      setUploading(false);
-      return;
-    }
-    const { data: urlData } = supabase.storage.from("ad-images").getPublicUrl(path);
-    setImageUrl(urlData.publicUrl);
-    setUploading(false);
-    toast.success("ছবি আপলোড হয়েছে!");
-  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -229,19 +213,7 @@ export default function AdminAds() {
 
               {/* Image upload */}
               {adType === "image" && adSource === "custom" && (
-                <div className="space-y-2">
-                  <Label>বিজ্ঞাপনের ছবি</Label>
-                  <div className="flex gap-2">
-                    <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="URL অথবা আপলোড করুন" className="flex-1" />
-                    <label className="cursor-pointer">
-                      <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                      <Button type="button" variant="outline" size="icon" disabled={uploading} asChild>
-                        <span><Upload className="h-4 w-4" /></span>
-                      </Button>
-                    </label>
-                  </div>
-                  {imageUrl && <img src={imageUrl} alt="Preview" className="h-20 rounded border object-contain" />}
-                </div>
+                <ImageUploadField value={imageUrl} onChange={setImageUrl} bucket="ad-images" folder="ads" label="বিজ্ঞাপনের ছবি" />
               )}
 
               <div className="space-y-2"><Label>লিংক URL</Label><Input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://" /></div>
