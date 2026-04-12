@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useProductBySlug } from "@/hooks/useProducts";
+import { useProductBySlug, useProductCategories } from "@/hooks/useProducts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToggleFavorite } from "@/hooks/useFavorites";
 import { useCartMutations } from "@/hooks/useCart";
@@ -22,6 +22,7 @@ import AdSlot from "@/components/AdSlot";
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
   const { data: product, isLoading } = useProductBySlug(slug);
+  const { data: multiCategories } = useProductCategories(product?.id);
   const { user } = useAuth();
   const toggleFav = useToggleFavorite();
   const { addToCart } = useCartMutations();
@@ -160,9 +161,18 @@ export default function ProductDetail() {
                   </Link>
                 )}
                 <div className="flex flex-wrap gap-2">
-                  {product.categories && (
-                    <Badge variant="outline">{product.categories.name}</Badge>
-                  )}
+                  {multiCategories && multiCategories.length > 0
+                    ? multiCategories.map((cat: any) => (
+                        <Link key={cat.slug} to={`/category/${cat.slug}`}>
+                          <Badge variant="outline">{cat.icon && <span className="mr-1">{cat.icon}</span>}{cat.name}</Badge>
+                        </Link>
+                      ))
+                    : product.categories && (
+                        <Link to={`/category/${product.categories.slug}`}>
+                          <Badge variant="outline">{product.categories.name}</Badge>
+                        </Link>
+                      )
+                  }
                   <Badge variant="secondary">{product.content_type}</Badge>
                   {product.is_paid && <Badge>৳{product.price}</Badge>}
                   {!product.is_paid && <Badge variant="secondary">ফ্রি</Badge>}
