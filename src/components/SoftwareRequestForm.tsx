@@ -17,6 +17,24 @@ export default function SoftwareRequestForm() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Check pending request count for limit
+  const { data: pendingCount } = useQuery({
+    queryKey: ["my-pending-request-count", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("software_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user!.id)
+        .eq("status", "pending");
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  const MAX_PENDING = 5;
+  const limitReached = (pendingCount || 0) >= MAX_PENDING;
+
   const { data: requests } = useQuery({
     queryKey: ["software-requests-recent"],
     queryFn: async () => {
