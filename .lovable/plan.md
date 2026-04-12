@@ -1,86 +1,64 @@
 
 
-# প্রোডাক্ট আপলোড সিস্টেম রিডিজাইন — Multi-Category + Content-Type-Specific Fields
+# ডাউনলোড লিংক ফিডব্যাক সিস্টেম — সার্ভার হেলথ ট্র্যাকিং
 
-## সমস্যা
-1. প্রোডাক্টে শুধু একটা category দেওয়া যায় (single `category_id` column)
-2. Category selector-এ search নেই
-3. সব content type-এ একই ফিল্ড দেখায় (movie-তে OS Type, developer দেখায় — অপ্রাসঙ্গিক)
+## কী করা হবে
 
-## সমাধান
+ডাউনলোড লিংকের পাশে "কাজ করেছে ✅" / "কাজ করেনি ❌" বাটন থাকবে। User ফিডব্যাক দিলে IP সহ log হবে। যে সার্ভারে বেশি মানুষ সফল, সেটা উপরে আসবে। Admin dashboard-এ সার্ভার health দেখতে পারবে।
 
-### ১. Multi-Category সাপোর্ট (DB Migration)
+## DB Migration — নতুন table
 
-নতুন junction table তৈরি:
 ```text
-product_categories
-├── product_id (uuid, FK → products)
-├── category_id (uuid, FK → categories)
-└── PRIMARY KEY (product_id, category_id)
+download_feedback
+├── id (uuid PK)
+├── download_id (uuid → product_downloads.id)
+├── product_id (uuid → products.id)
+├── user_id (uuid, nullable — logged in হলে)
+├── ip_address (text)
+├── is_working (boolean) — true = কাজ করেছে, false = করেনি
+├── created_at (timestamptz)
 ```
-- `products.category_id` column রাখব backward compatibility-র জন্য (primary category হিসেবে)
-- নতুন `product_categories` table-এ একটা product-এর multiple categories থাকবে
-- RLS: Anyone can SELECT, admin ALL, vendor can manage own product's categories
 
-### ২. Searchable Multi-Category Selector Component
+RLS: Anyone can INSERT (anonymous feedback allowed), authenticated users can DELETE own feedback (reset), admin ALL access.
 
-নতুন `MultiCategorySelect` component:
-- Checkbox-based multi-select dropdown
-- Search/filter input field
-- Parent → child hierarchy দেখাবে (indented)
-- Selected categories chips/badges হিসেবে দেখাবে
+Unique constraint: `(download_id, ip_address)` — একই IP থেকে একই লিংকে একবারই ফিডব্যাক।
 
-### ৩. Content-Type অনুযায়ী Dynamic Fields
+## পরিবর্তন
 
-content_type enum-এ যা আছে: `software`, `android`, `game`, `movie`, `music`, `ebook`, `tutorial`, `other`
+### 1. ProductDetail.tsx — ফিডব্যাক UI
+- প্রতিটা download link-এর পাশে 👍/👎 বাটন
+- ক্লিক করলে `download_feedback` table-এ insert (IP ক্লায়েন্ট-সাইড থেকে fetch)
+- User চাইলে reset (নিজের feedback delete)
+- Success rate % দেখাবে (যেমন "৮৫% সফল")
+- Download links success rate অনুযায়ী sorted — বেশি success উপরে
 
-প্রতিটা type-এ কোন ফিল্ড দেখাবে:
+### 2. Edge Function — `download-feedback`
+- IP address সার্ভার-সাইডে capture করবে (req headers থেকে)
+- Upsert logic: একই IP + download_id থাকলে update, না থাকলে insert
+- Rate limiting: একই IP থেকে ১ মিনিটে max ১০ টা feedback
 
-| ফিল্ড | software | android | game | movie | music | ebook | tutorial | other |
-|---|---|---|---|---|---|---|---|---|
-| OS Type | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Version | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Developer | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Director* | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Artist* | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Author* | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
-| Video URL | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Duration | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Language* | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ | ✅ | ❌ |
-| File Size | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+### 3. Admin Dashboard — নতুন section `AdminProducts.tsx` বা আলাদা page
+- প্রতিটা সার্ভারের health stats: total votes, success %, fail %
+- ৭০%+ fail হলে red warning দেখাবে
+- সার্ভার-ভিত্তিক aggregate view
 
-\* নতুন fields — `developer` column-ই reuse করব (label পরিবর্তন হবে content_type অনুসারে: Developer/Director/Artist/Author)
+### 4. Auto-sorting logic
+- Download links query-তে success_rate calculated field যোগ
+- `download_feedback` থেকে aggregate করে sort: বেশি success rate = উপরে
+- কোনো feedback না থাকলে middle position
 
-**Content Type selector** ফর্মের শুরুতে থাকবে — সিলেক্ট করলে নিচের ফিল্ড dynamic-ভাবে পরিবর্তন হবে।
-
-### ৪. ফর্ম রি-অর্গানাইজ
-
-ফর্মকে sections-এ ভাগ করব:
-1. **Basic Info** — Title, Slug, Content Type, Description
-2. **Media** — Image, Thumbnail, Screenshots, Video URL
-3. **Categories** — Multi-category selector (searchable)
-4. **Type-Specific Details** — content_type অনুযায়ী dynamic fields
-5. **Pricing** — Paid/Free, Price, Discount, License, Affiliate
-6. **Download Links** — Server links
-7. **Admin Controls** — Status, Verified, Active, Featured, Trending
-
-## পরিবর্তিত ফাইলসমূহ
+## ফাইলসমূহ
 
 | ফাইল | কী হবে |
 |---|---|
-| **Migration** | `product_categories` table + RLS |
-| `src/components/MultiCategorySelect.tsx` | নতুন — searchable multi-category picker |
-| `src/pages/admin/AdminProducts.tsx` | Content-type dynamic fields, multi-category, form reorganize |
-| `src/pages/vendor/VendorProducts.tsx` | Same dynamic fields + multi-category |
-| `src/hooks/useProducts.ts` | Multi-category filtering support |
-| `src/pages/CategoryPage.tsx` | `product_categories` table থেকে query |
-| `src/pages/SearchPage.tsx` | Multi-category filter |
-| `src/pages/ProductDetail.tsx` | Multiple categories দেখাবে |
+| **Migration** | `download_feedback` table + RLS + unique constraint |
+| `supabase/functions/download-feedback/index.ts` | নতুন — IP capture + upsert feedback |
+| `src/pages/ProductDetail.tsx` | ফিডব্যাক বাটন, success rate, auto-sort |
+| `src/pages/admin/AdminProducts.tsx` | সার্ভার health stats section |
 
 ## টেকনিক্যাল নোট
 
-- `developer` column reuse করব Director/Artist/Author হিসেবে — নতুন column লাগবে না
-- `video_url` ও `video_duration` column already আছে products table-এ
-- `product_categories` table দিয়ে multi-category, কিন্তু `category_id` রাখব primary category হিসেবে
-- Category query: `product_categories` join করে filter করব
+- IP address edge function-এ `req.headers.get("x-forwarded-for")` দিয়ে নেওয়া হবে — client-side API call করে IP নেওয়া হবে না (privacy + reliability)
+- Success rate calculation: `COUNT(is_working=true) / COUNT(*) * 100`
+- Auto-sort: downloads query-তে left join করে success_rate descending sort
 
