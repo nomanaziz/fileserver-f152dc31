@@ -18,6 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import AdSlot from "@/components/AdSlot";
+import DownloadLinkFeedback from "@/components/DownloadLinkFeedback";
 
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -43,6 +44,31 @@ export default function ProductDetail() {
     },
     enabled: !!product?.id,
   });
+
+  // Fetch all feedback for this product to sort downloads by success rate
+  const { data: allFeedback } = useQuery({
+    queryKey: ["download-feedback-all", product?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("download_feedback")
+        .select("download_id, is_working")
+        .eq("product_id", product!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!product?.id,
+  });
+
+  // Sort downloads by success rate (higher success = first)
+  const sortedDownloads = downloads ? [...downloads].sort((a, b) => {
+    if (!allFeedback || allFeedback.length === 0) return 0;
+    const getRate = (dlId: string) => {
+      const fb = allFeedback.filter((f: any) => f.download_id === dlId);
+      if (fb.length === 0) return 50; // neutral position
+      return (fb.filter((f: any) => f.is_working).length / fb.length) * 100;
+    };
+    return getRate(b.id) - getRate(a.id);
+  }) : [];
 
   const { data: vendorInfo } = useQuery({
     queryKey: ["product-vendor", product?.vendor_id],
