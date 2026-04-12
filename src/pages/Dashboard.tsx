@@ -12,7 +12,7 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { useActiveSubscription, useTodayDownloadCount } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Download, Heart, User, ShoppingBag, Crown, Server, Trash2, ExternalLink } from "lucide-react";
@@ -22,6 +22,13 @@ export default function Dashboard() {
   const { data: favorites } = useFavorites();
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [phone, setPhone] = useState(profile?.phone || "");
+
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.display_name || "");
+      setPhone(profile.phone || "");
+    }
+  }, [profile]);
 
   const { data: activeSub } = useActiveSubscription();
   const { data: todayCount } = useTodayDownloadCount();
