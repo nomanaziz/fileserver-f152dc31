@@ -18,6 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import AdSlot from "@/components/AdSlot";
+import DownloadLinkFeedback from "@/components/DownloadLinkFeedback";
 
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -43,6 +44,31 @@ export default function ProductDetail() {
     },
     enabled: !!product?.id,
   });
+
+  // Fetch all feedback for this product to sort downloads by success rate
+  const { data: allFeedback } = useQuery({
+    queryKey: ["download-feedback-all", product?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("download_feedback")
+        .select("download_id, is_working")
+        .eq("product_id", product!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!product?.id,
+  });
+
+  // Sort downloads by success rate (higher success = first)
+  const sortedDownloads = downloads ? [...downloads].sort((a, b) => {
+    if (!allFeedback || allFeedback.length === 0) return 0;
+    const getRate = (dlId: string) => {
+      const fb = allFeedback.filter((f: any) => f.download_id === dlId);
+      if (fb.length === 0) return 50; // neutral position
+      return (fb.filter((f: any) => f.is_working).length / fb.length) * 100;
+    };
+    return getRate(b.id) - getRate(a.id);
+  }) : [];
 
   const { data: vendorInfo } = useQuery({
     queryKey: ["product-vendor", product?.vendor_id],
@@ -277,40 +303,42 @@ export default function ProductDetail() {
             <AdSlot placement="before_download" />
 
             {/* Download links — only show if accessible */}
-            {canAccess && downloads && downloads.length > 0 && (
+            {canAccess && sortedDownloads.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">ডাউনলোড লিংক</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  {downloads.map((dl: any) => (
-                    <button
-                      key={dl.id}
-                      onClick={async () => {
-                        if (!user) { navigate("/login"); return; }
-                        toast.loading("ডাউনলোড লিংক তৈরি হচ্ছে...");
-                        try {
-                          const { data, error } = await supabase.functions.invoke("secure-download", {
-                            body: { product_id: product.id, download_id: dl.id },
-                          });
-                          toast.dismiss();
-                          if (error) throw error;
-                          if (data?.download_url) {
-                            window.open(data.download_url, "_blank");
-                          } else {
-                            throw new Error(data?.error || "ডাউনলোড ব্যর্থ");
+                <CardContent className="space-y-3">
+                  {sortedDownloads.map((dl: any) => (
+                    <div key={dl.id} className="rounded-md border p-2">
+                      <button
+                        onClick={async () => {
+                          if (!user) { navigate("/login"); return; }
+                          toast.loading("ডাউনলোড লিংক তৈরি হচ্ছে...");
+                          try {
+                            const { data, error } = await supabase.functions.invoke("secure-download", {
+                              body: { product_id: product.id, download_id: dl.id },
+                            });
+                            toast.dismiss();
+                            if (error) throw error;
+                            if (data?.download_url) {
+                              window.open(data.download_url, "_blank");
+                            } else {
+                              throw new Error(data?.error || "ডাউনলোড ব্যর্থ");
+                            }
+                          } catch (e: any) {
+                            toast.dismiss();
+                            toast.error(e.message || "ডাউনলোড ব্যর্থ হয়েছে");
                           }
-                        } catch (e: any) {
-                          toast.dismiss();
-                          toast.error(e.message || "ডাউনলোড ব্যর্থ হয়েছে");
-                        }
-                      }}
-                      className="flex items-center gap-2 p-2 rounded-md border hover:bg-muted transition-colors text-sm w-full text-left"
-                    >
-                      <Download className="h-4 w-4 text-primary" />
-                      <span>{dl.download_servers?.label || dl.download_servers?.name || "Server"}</span>
-                      {dl.file_size && <span className="text-muted-foreground ml-auto">{dl.file_size}</span>}
-                    </button>
+                        }}
+                        className="flex items-center gap-2 hover:bg-muted rounded px-1 py-1 transition-colors text-sm w-full text-left"
+                      >
+                        <Download className="h-4 w-4 text-primary" />
+                        <span>{dl.download_servers?.label || dl.download_servers?.name || "Server"}</span>
+                        {dl.file_size && <span className="text-muted-foreground ml-auto">{dl.file_size}</span>}
+                      </button>
+                      <DownloadLinkFeedback downloadId={dl.id} productId={product.id} />
+                    </div>
                   ))}
                 </CardContent>
               </Card>
