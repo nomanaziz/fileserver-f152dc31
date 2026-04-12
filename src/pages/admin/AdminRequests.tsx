@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Trash2, PackagePlus, XCircle, Bell, Users } from "lucide-react";
+import { Trash2, PackagePlus, XCircle, Bell, Users, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -13,6 +14,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -22,6 +33,8 @@ export default function AdminRequests() {
   const [notifyDialog, setNotifyDialog] = useState<any>(null);
   const [productLink, setProductLink] = useState("");
   const [notifyType, setNotifyType] = useState<"free" | "paid">("free");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ["admin-requests"],
@@ -41,7 +54,6 @@ export default function AdminRequests() {
         });
       }
 
-      // Fetch subscriber counts
       const countMap: Record<string, number> = {};
       for (const r of data || []) {
         const { count } = await supabase
@@ -58,6 +70,23 @@ export default function AdminRequests() {
       }));
     },
   });
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (!requests) return;
+    if (selectedIds.size === requests.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(requests.map((r) => r.id)));
+    }
+  };
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status, fulfilled_product_id }: { id: string; status: string; fulfilled_product_id?: string }) => {
@@ -85,6 +114,28 @@ export default function AdminRequests() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  // Bulk actions
+  const bulkUpdateStatus = async (status: string) => {
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      await supabase.from("software_requests").update({ status }).eq("id", id);
+    }
+    toast.success(`${ids.length}টি রিকোয়েস্ট ${status} করা হয়েছে`);
+    setSelectedIds(new Set());
+    queryClient.invalidateQueries({ queryKey: ["admin-requests"] });
+  };
+
+  const bulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      await supabase.from("software_requests").delete().eq("id", id);
+    }
+    toast.success(`${ids.length}টি রিকোয়েস্ট ডিলিট হয়েছে`);
+    setSelectedIds(new Set());
+    setBulkDeleteOpen(false);
+    queryClient.invalidateQueries({ queryKey: ["admin-requests"] });
+  };
+
   const handleConvert = (r: any) => {
     updateStatus.mutate({ id: r.id, status: "fulfilled" });
     navigate(`/admin/products?new=true&title=${encodeURIComponent(r.title)}`);
@@ -95,7 +146,6 @@ export default function AdminRequests() {
     const requestId = notifyDialog.id;
     const requestTitle = notifyDialog.title;
 
-    // Get all subscribers + the original requester
     const { data: subscribers } = await supabase
       .from("software_request_subscribers")
       .select("user_id")
@@ -149,9 +199,35 @@ export default function AdminRequests() {
   return (
     <div>
       <h2 className="text-lg font-semibold mb-4">সফটওয়্যার রিকোয়েস্ট ({requests?.length || 0})</h2>
+
+      {/* Bulk Action Toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-2 p-3 mb-4 rounded-lg bg-muted border flex-wrap">
+          <span className="text-sm font-medium">{selectedIds.size} জন সিলেক্ট</span>
+          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => bulkUpdateStatus("fulfilled")}>
+            <CheckCircle className="h-3 w-3" /> Bulk Fulfill
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-destructive" onClick={() => bulkUpdateStatus("rejected")}>
+            <XCircle className="h-3 w-3" /> Bulk Reject
+          </Button>
+          <Button size="sm" variant="destructive" className="h-7 text-xs gap-1" onClick={() => setBulkDeleteOpen(true)}>
+            <Trash2 className="h-3 w-3" /> Bulk Delete
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelectedIds(new Set())}>
+            বাতিল
+          </Button>
+        </div>
+      )}
+
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-10">
+              <Checkbox
+                checked={requests && requests.length > 0 && selectedIds.size === requests.length}
+                onCheckedChange={toggleAll}
+              />
+            </TableHead>
             <TableHead>সফটওয়্যার</TableHead>
             <TableHead>বিবরণ</TableHead>
             <TableHead>ইউজার</TableHead>
@@ -163,7 +239,13 @@ export default function AdminRequests() {
         </TableHeader>
         <TableBody>
           {requests?.map((r: any) => (
-            <TableRow key={r.id}>
+            <TableRow key={r.id} className={selectedIds.has(r.id) ? "bg-muted/50" : ""}>
+              <TableCell>
+                <Checkbox
+                  checked={selectedIds.has(r.id)}
+                  onCheckedChange={() => toggleSelect(r.id)}
+                />
+              </TableCell>
               <TableCell className="font-medium">{r.title}</TableCell>
               <TableCell className="max-w-[200px] truncate text-muted-foreground">{r.description || "—"}</TableCell>
               <TableCell>{r.user_display_name}</TableCell>
@@ -220,7 +302,7 @@ export default function AdminRequests() {
           ))}
           {(!requests || requests.length === 0) && (
             <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                 কোনো রিকোয়েস্ট নেই
               </TableCell>
             </TableRow>
@@ -272,6 +354,24 @@ export default function AdminRequests() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>নিশ্চিত করুন</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedIds.size}টি রিকোয়েস্ট ডিলিট করতে চান? এটি undo করা যাবে না।
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>বাতিল</AlertDialogCancel>
+            <AlertDialogAction onClick={bulkDelete} className="bg-destructive text-destructive-foreground">
+              ডিলিট করুন
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

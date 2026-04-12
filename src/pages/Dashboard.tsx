@@ -13,13 +13,14 @@ import { useActiveSubscription, useTodayDownloadCount } from "@/hooks/useSubscri
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Download, Heart, User, ShoppingBag, Crown, Server, Trash2, ExternalLink } from "lucide-react";
+import { Download, Heart, User, ShoppingBag, Crown, Server, Trash2, ExternalLink, MessageSquarePlus, XCircle } from "lucide-react";
 
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
   const { data: favorites } = useFavorites();
+  const queryClient = useQueryClient();
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [phone, setPhone] = useState(profile?.phone || "");
 
@@ -75,6 +76,52 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
+  // My software requests
+  const { data: myRequests } = useQuery({
+    queryKey: ["my-software-requests", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("software_requests")
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      // Fetch fulfilled product details
+      const fulfilledIds = data
+        .filter((r) => r.fulfilled_product_id)
+        .map((r) => r.fulfilled_product_id!);
+
+      let productMap: Record<string, { title: string; slug: string; is_paid: boolean }> = {};
+      if (fulfilledIds.length > 0) {
+        const { data: products } = await supabase
+          .from("products")
+          .select("id, title, slug, is_paid")
+          .in("id", fulfilledIds);
+        products?.forEach((p) => {
+          productMap[p.id] = { title: p.title, slug: p.slug, is_paid: p.is_paid };
+        });
+      }
+
+      return data.map((r) => ({
+        ...r,
+        product: r.fulfilled_product_id ? productMap[r.fulfilled_product_id] : null,
+      }));
+    },
+    enabled: !!user,
+  });
+
+  const cancelRequest = async (id: string) => {
+    const { error } = await supabase.from("software_requests").delete().eq("id", id);
+    if (error) {
+      toast.error("ক্যানসেল করতে ব্যর্থ");
+    } else {
+      toast.success("রিকোয়েস্ট ক্যানসেল হয়েছে");
+      queryClient.invalidateQueries({ queryKey: ["my-software-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["my-pending-request-count"] });
+    }
+  };
+
   if (!loading && !user) return <Navigate to="/login" />;
   if (loading) return null;
 
@@ -102,6 +149,12 @@ export default function Dashboard() {
 
   const subPlan = activeSub?.subscription_plans as any;
 
+  const statusColor: Record<string, string> = {
+    pending: "text-yellow-600",
+    fulfilled: "text-green-600",
+    rejected: "text-destructive",
+  };
+
   return (
     <Layout>
       <div className="container py-8">
@@ -110,6 +163,7 @@ export default function Dashboard() {
           <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="profile"><User className="h-4 w-4 mr-1" /> প্রোফাইল</TabsTrigger>
             <TabsTrigger value="subscription"><Crown className="h-4 w-4 mr-1" /> সাবস্ক্রিপশন</TabsTrigger>
+            <TabsTrigger value="requests"><MessageSquarePlus className="h-4 w-4 mr-1" /> রিকোয়েস্ট</TabsTrigger>
             <TabsTrigger value="favorites"><Heart className="h-4 w-4 mr-1" /> ফেভারিট</TabsTrigger>
             <TabsTrigger value="downloads"><Download className="h-4 w-4 mr-1" /> ডাউনলোড</TabsTrigger>
             <TabsTrigger value="purchases"><ShoppingBag className="h-4 w-4 mr-1" /> পারচেজ</TabsTrigger>
@@ -179,6 +233,63 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="requests">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquarePlus className="h-5 w-5 text-primary" /> আমার রিকোয়েস্ট
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {myRequests?.map((r: any) => (
+                    <div key={r.id} className="flex items-center justify-between p-4 gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{r.title}</p>
+                        {r.description && (
+                          <p className="text-xs text-muted-foreground truncate">{r.description}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {new Date(r.created_at).toLocaleDateString("bn-BD")}
+                        </p>
+                        {r.status === "fulfilled" && r.product && (
+                          <Link
+                            to={`/product/${r.product.slug}`}
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            {r.product.title}
+                            <Badge variant={r.product.is_paid ? "destructive" : "default"} className="text-[10px] ml-1">
+                              {r.product.is_paid ? "পেইড" : "ফ্রি"}
+                            </Badge>
+                          </Link>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-xs font-medium capitalize ${statusColor[r.status] || "text-muted-foreground"}`}>
+                          {r.status}
+                        </span>
+                        {r.status === "pending" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs text-destructive gap-1"
+                            onClick={() => cancelRequest(r.id)}
+                          >
+                            <XCircle className="h-3 w-3" /> ক্যানসেল
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {(!myRequests || myRequests.length === 0) && (
+                    <p className="p-6 text-center text-muted-foreground">কোনো রিকোয়েস্ট নেই।</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="favorites">
