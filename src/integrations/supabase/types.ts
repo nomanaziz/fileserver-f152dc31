@@ -464,6 +464,51 @@ export type Database = {
         }
         Relationships: []
       }
+      download_feedback: {
+        Row: {
+          created_at: string
+          download_id: string
+          id: string
+          ip_address: string
+          is_working: boolean
+          product_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          download_id: string
+          id?: string
+          ip_address: string
+          is_working: boolean
+          product_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          download_id?: string
+          id?: string
+          ip_address?: string
+          is_working?: boolean
+          product_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "download_feedback_download_id_fkey"
+            columns: ["download_id"]
+            isOneToOne: false
+            referencedRelation: "product_downloads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "download_feedback_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       download_history: {
         Row: {
           downloaded_at: string
