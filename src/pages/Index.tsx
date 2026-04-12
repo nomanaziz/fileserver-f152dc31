@@ -22,6 +22,19 @@ export default function Index() {
   const { data: latest, isLoading: loadingLatest } = useLatestProducts();
   const platform = useDevicePlatform();
   const { data: recommended, isLoading: loadingRecommended } = useRecommendedProducts(platform);
+  const { data: blogPosts, isLoading: loadingBlog } = useQuery({
+    queryKey: ["homepage-blog"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blog_posts")
+        .select("*")
+        .eq("is_published", true)
+        .order("published_at", { ascending: false })
+        .limit(4);
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const platformLabel = getPlatformLabel(platform);
   const PlatformIcon = platform === "android" || platform === "ios" ? Smartphone : platform === "mac" ? Laptop : Monitor;
