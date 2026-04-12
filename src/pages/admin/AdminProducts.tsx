@@ -402,6 +402,8 @@ export default function AdminProducts() {
 
       {selected.size > 0 && <div className="flex gap-2 items-center p-2 bg-muted rounded-md"><span className="text-sm font-medium">{selected.size}টি সিলেক্ট</span><Button size="sm" variant="outline" onClick={() => bulkMutation.mutate("publish")}>Publish</Button><Button size="sm" variant="outline" onClick={() => bulkMutation.mutate("draft")}>Draft</Button><Button size="sm" variant="destructive" onClick={() => bulkMutation.mutate("delete")}>Delete</Button></div>}
 
+      <ServerHealthStats />
+
       {isLoading ? <div className="animate-pulse h-48 bg-card rounded-xl" /> : (
         <Table>
           <TableHeader><TableRow>
