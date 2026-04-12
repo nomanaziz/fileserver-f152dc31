@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,8 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Store, CheckCircle, Clock, ShieldCheck } from "lucide-react";
+import { Store, CheckCircle, Clock, ShieldCheck, Upload, X, Image } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function BecomeVendor() {
   const { user } = useAuth();
@@ -19,7 +20,10 @@ export default function BecomeVendor() {
   const createVendor = useCreateVendorProfile();
   const [storeName, setStoreName] = useState("");
   const [storeDesc, setStoreDesc] = useState("");
-  const [logoUrl, setLogoUrl] = useState("");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!user) {
     navigate("/login");
@@ -50,14 +54,77 @@ export default function BecomeVendor() {
     );
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 100KB)
+    if (file.size > 102400) {
+      toast.error("লোগো সাইজ সর্বোচ্চ ১০০KB হতে পারবে");
+      return;
+    }
+
+    // Check file type
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("শুধু JPG, PNG বা WebP ফরম্যাট অনুমোদিত");
+      return;
+    }
+
+    // Validate dimensions
+    const img = new window.Image();
+    img.onload = () => {
+      URL.revokeObjectURL(img.src);
+      if (img.width > 200 || img.height > 200) {
+        toast.error("লোগো সর্বোচ্চ ২০০x২০০ পিক্সেল হতে পারবে");
+        return;
+      }
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
+    };
+    img.onerror = () => {
+      toast.error("ছবি লোড করা যায়নি");
+    };
+    img.src = URL.createObjectURL(file);
+  };
+
+  const removeLogo = () => {
+    setLogoFile(null);
+    if (logoPreview) URL.revokeObjectURL(logoPreview);
+    setLogoPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const uploadLogo = async (): Promise<string | undefined> => {
+    if (!logoFile || !user) return undefined;
+    setUploading(true);
+    try {
+      const ext = logoFile.name.split(".").pop() || "png";
+      const filePath = `${user.id}/logo.${ext}`;
+      const { error } = await supabase.storage
+        .from("vendor-logos")
+        .upload(filePath, logoFile, { upsert: true });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage
+        .from("vendor-logos")
+        .getPublicUrl(filePath);
+      return urlData.publicUrl;
+    } catch (err: any) {
+      toast.error("লোগো আপলোড ব্যর্থ: " + (err.message || ""));
+      return undefined;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!storeName.trim()) { toast.error("স্টোরের নাম দিন"); return; }
     try {
+      const logoUrl = await uploadLogo();
       await createVendor.mutateAsync({
         store_name: storeName.trim(),
         store_description: storeDesc.trim() || undefined,
-        logo_url: logoUrl.trim() || undefined,
+        logo_url: logoUrl,
       });
       toast.success("ভেন্ডর আবেদন সফল হয়েছে!");
     } catch (err: any) {
@@ -87,8 +154,33 @@ export default function BecomeVendor() {
                 <Textarea value={storeDesc} onChange={e => setStoreDesc(e.target.value)} placeholder="আপনার স্টোর সম্পর্কে কিছু লিখুন..." rows={3} />
               </div>
               <div className="space-y-2">
-                <Label>লোগো URL</Label>
-                <Input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://..." />
+                <Label>লোগো (সর্বোচ্চ ২০০x২০০px, ১০০KB)</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+                {logoPreview ? (
+                  <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/50">
+                    <img src={logoPreview} alt="Logo preview" className="w-16 h-16 rounded-md object-cover border" />
+                    <div className="flex-1 text-sm text-muted-foreground truncate">{logoFile?.name}</div>
+                    <Button type="button" variant="ghost" size="icon" onClick={removeLogo}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-20 border-dashed flex flex-col gap-1"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">JPG, PNG বা WebP আপলোড করুন</span>
+                  </Button>
+                )}
               </div>
               <div className="bg-muted p-3 rounded-md text-xs text-muted-foreground space-y-1">
                 <p>✅ প্রতিটা বিক্রি থেকে ৮০% আপনি পাবেন</p>
@@ -96,8 +188,8 @@ export default function BecomeVendor() {
                 <p>✅ পেমেন্ট আমাদের সিস্টেমে প্রসেস হবে</p>
                 <p>⏳ অ্যাডমিন ভেরিফিকেশনের পর প্রোডাক্ট আপলোড করতে পারবেন</p>
               </div>
-              <Button type="submit" className="w-full" disabled={createVendor.isPending}>
-                {createVendor.isPending ? "প্রসেসিং..." : "আবেদন করুন"}
+              <Button type="submit" className="w-full" disabled={createVendor.isPending || uploading}>
+                {uploading ? "আপলোড হচ্ছে..." : createVendor.isPending ? "প্রসেসিং..." : "আবেদন করুন"}
               </Button>
             </form>
           </CardContent>
