@@ -1,73 +1,30 @@
 
 
-# সব জায়গায় ইমেজ আপলোড + অটো কম্প্রেশন + ডিফল্ট ইমেজ
+# Admin Users — Bulk Operations যোগ করা
 
-## কী করা হবে
+## কী যোগ হবে
 
-1. **`ImageUploadField` — রিইউজেবল কম্পোনেন্ট তৈরি** যেটা সব জায়গায় ব্যবহার হবে
-   - আপলোড বাটন (drag & drop সাপোর্ট)
-   - ক্লায়েন্ট-সাইড ইমেজ কম্প্রেশন (Canvas API দিয়ে resize + quality reduce — কোনো এক্সটার্নাল লাইব্রেরি ছাড়া)
-   - প্রিভিউ দেখাবে
-   - ইমেজ না দিলে ডিফল্ট placeholder দেখাবে
-   - URL ম্যানুয়ালি পেস্ট করারও অপশন থাকবে
+1. **Checkbox দিয়ে bulk select** — প্রতিটা row-তে checkbox + header-এ "Select All" checkbox
+2. **Bulk action toolbar** — selected users থাকলে toolbar দেখাবে:
+   - **Bulk Role Change** — সব selected user-এর role একসাথে পরিবর্তন (Admin/Moderator/User)
+   - **Bulk Activate** — সব selected user activate
+   - **Bulk Deactivate** — সব selected user deactivate
+   - **Bulk Delete** — সব selected user ডিলিট (profiles + user_roles থেকে)
+3. **Selected count** দেখাবে toolbar-এ (যেমন "৫ জন সিলেক্ট করা হয়েছে")
+4. **Confirmation dialog** — Delete-এর আগে confirm করতে হবে
 
-2. **`product-images` স্টোরেজ বাকেট তৈরি** (migration) — প্রোডাক্ট, ব্লগ, লাইভ টিভি, পেমেন্ট মেথড সব ইমেজ এখানে যাবে
+## পরিবর্তন
 
-3. **ডিফল্ট placeholder ইমেজ** — `public/default-image.svg` তৈরি করব
+**শুধু ১টা ফাইল:** `src/pages/admin/AdminUsers.tsx`
 
-4. **কম্প্রেশন লজিক:**
-   - ইমেজ Canvas-এ লোড → max 800px width-এ resize → JPEG 0.7 quality-তে export
-   - ফাইল সাইজ যতই বড় হোক, কম্প্রেস হয়ে ~100-200KB-এর মধ্যে আসবে
+- `selectedIds` state (Set) যোগ
+- Header checkbox → toggle all filtered users
+- Row checkbox → toggle individual
+- Bulk toolbar UI (selected > 0 হলে দেখাবে)
+- `bulkChangeRole`, `bulkToggleActive`, `bulkDelete` mutations
+- Delete-এ AlertDialog confirmation
 
-## যেসব ফাইলে `ImageUploadField` বসবে
+**DB migration লাগবে না** — profiles table-এ admin-এর ইতিমধ্যে ALL access আছে, user_roles-এও admin ALL access আছে। Delete policy profiles-এ নেই, তবে admin ALL policy আছে user_roles-এ। profiles-এ delete নেই, তাই deactivate-ই primary action হবে। user_roles delete admin পারে।
 
-| ফাইল | কোন ফিল্ড |
-|---|---|
-| `src/pages/admin/AdminProducts.tsx` | image_url, thumbnail_icon, screenshots |
-| `src/pages/admin/AdminBlog.tsx` | thumbnail_url |
-| `src/pages/admin/AdminLiveTV.tsx` | thumbnail_url |
-| `src/pages/admin/AdminPaymentMethods.tsx` | logo_url |
-| `src/pages/vendor/VendorProducts.tsx` | image_url, screenshots |
-| `src/pages/vendor/VendorSettings.tsx` | logo_url |
-
-**AdminAds-এ ইতিমধ্যে আপলোড আছে** — সেটাও এই নতুন কম্পোনেন্ট দিয়ে রিপ্লেস করব consistency-র জন্য।
-
-## নতুন ফাইল
-
-- `src/components/ImageUploadField.tsx` — রিইউজেবল কম্পোনেন্ট
-- `src/lib/imageCompression.ts` — Canvas-based compression utility
-- `public/default-image.svg` — ডিফল্ট placeholder
-- Migration: `product-images` bucket + RLS policies
-
-## ImageUploadField API
-
-```typescript
-<ImageUploadField
-  value={imageUrl}           // current URL
-  onChange={setImageUrl}     // callback with new URL
-  bucket="product-images"   // storage bucket
-  folder="products"         // subfolder path
-  label="প্রোডাক্ট ইমেজ"
-  maxWidth={800}             // optional, default 800px
-  quality={0.7}              // optional, default 0.7
-/>
-```
-
-## টেকনিক্যাল ডিটেইল
-
-**কম্প্রেশন ফ্লো:**
-```text
-File selected → Create Image element → Draw on Canvas (maxWidth) 
-→ canvas.toBlob('image/webp', quality) → Upload to Supabase Storage
-```
-
-- WebP ফরম্যাটে কনভার্ট হবে (সবচেয়ে ছোট সাইজ)
-- ব্রাউজার WebP সাপোর্ট না করলে JPEG fallback
-
-**Storage bucket migration:**
-- `product-images` bucket, public, 5MB limit
-- Authenticated users can upload (path: `{user_id}/filename`)
-- Public read access
-
-মোট ~10টা ফাইল পরিবর্তন, ৩টা নতুন ফাইল।
+**Note:** profiles table-এ admin-এর DELETE policy নেই (শুধু SELECT, UPDATE আছে)। তাই "Bulk Delete" আসলে user deactivate করবে + তাদের role remove করবে। সত্যিকারের user delete করতে হলে auth.users থেকে delete লাগে যেটা client-side থেকে করা যায় না — এটা service_role key দিয়ে edge function লাগবে। আপাতত bulk deactivate + role remove-ই করব।
 
