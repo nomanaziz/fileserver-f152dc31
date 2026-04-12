@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Search, TrendingUp, Clock, Sparkles, ArrowRight, Download, Flame, Monitor, Smartphone, Laptop, File, Folder, Gamepad2, Film, Music, Code, Image, HardDrive, Wifi, Globe, Shield, Zap, Cloud, Database, Terminal } from "lucide-react";
+import { Search, TrendingUp, Clock, Sparkles, ArrowRight, Download, Flame, Monitor, Smartphone, Laptop, File, Folder, Gamepad2, Film, Music, Code, Image, HardDrive, Wifi, Globe, Shield, Zap, Cloud, Database, Terminal, Newspaper, Calendar, BookOpen } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +22,19 @@ export default function Index() {
   const { data: latest, isLoading: loadingLatest } = useLatestProducts();
   const platform = useDevicePlatform();
   const { data: recommended, isLoading: loadingRecommended } = useRecommendedProducts(platform);
+  const { data: blogPosts, isLoading: loadingBlog } = useQuery({
+    queryKey: ["homepage-blog"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blog_posts")
+        .select("*")
+        .eq("is_published", true)
+        .order("published_at", { ascending: false })
+        .limit(4);
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const platformLabel = getPlatformLabel(platform);
   const PlatformIcon = platform === "android" || platform === "ios" ? Smartphone : platform === "mac" ? Laptop : Monitor;
@@ -206,6 +221,79 @@ export default function Index() {
               ) : (
                 <div className="text-center py-12 rounded-xl border border-dashed border-border">
                   <p className="text-muted-foreground text-sm">No uploads yet.</p>
+                </div>
+              )}
+            </section>
+
+            {/* Latest News / Blog */}
+            <section className="mt-10">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+                    <Newspaper className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <h2 className="text-xl font-bold">সর্বশেষ খবর</h2>
+                </div>
+                <Link to="/blog" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                  সব দেখুন <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+              {loadingBlog ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="aspect-video rounded-lg shimmer" />
+                  ))}
+                </div>
+              ) : blogPosts && blogPosts.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {blogPosts.map((post) => (
+                    <Link key={post.id} to={`/blog/${post.slug}`} className="group">
+                      <div className="rounded-xl border border-border bg-background overflow-hidden hover:border-primary/30 transition-all h-full flex flex-col">
+                        <div className="aspect-video bg-muted relative overflow-hidden">
+                          {post.thumbnail_url ? (
+                            <img
+                              src={post.thumbnail_url}
+                              alt={post.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <BookOpen className="h-10 w-10 text-muted-foreground/20" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3 flex-1 flex flex-col">
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-1.5">
+                            <Calendar className="h-2.5 w-2.5" />
+                            {post.published_at
+                              ? new Date(post.published_at).toLocaleDateString("bn-BD", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })
+                              : ""}
+                          </div>
+                          <h3 className="text-sm font-semibold line-clamp-2 mb-1.5 group-hover:text-primary transition-colors">
+                            {post.title}
+                          </h3>
+                          {post.excerpt && (
+                            <p className="text-[11px] text-muted-foreground line-clamp-2 mb-2 flex-1">
+                              {post.excerpt}
+                            </p>
+                          )}
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary mt-auto">
+                            পড়ুন <ArrowRight className="h-2.5 w-2.5 group-hover:translate-x-1 transition-transform" />
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10 rounded-xl border border-dashed border-border">
+                  <Newspaper className="h-10 w-10 text-muted-foreground/20 mx-auto mb-2" />
+                  <p className="text-muted-foreground text-sm">শীঘ্রই নতুন আর্টিকেল আসছে।</p>
                 </div>
               )}
             </section>
