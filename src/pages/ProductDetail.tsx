@@ -22,6 +22,7 @@ import AdSlot from "@/components/AdSlot";
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
   const { data: product, isLoading } = useProductBySlug(slug);
+  const { data: multiCategories } = useProductCategories(product?.id);
   const { user } = useAuth();
   const toggleFav = useToggleFavorite();
   const { addToCart } = useCartMutations();
